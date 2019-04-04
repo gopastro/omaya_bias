@@ -1,0 +1,20 @@
+"""
+Master wrapper for all I2C devices in 
+OMAyA Bias System
+"""
+
+from omayabias.logging import logger
+from .Aardvark import Aardvark
+from .PCA import PCA
+
+logger.name = __name__
+
+class SISBias(object):
+    def __init__(self, portnum=0, debug=False):
+        self.debug = debug
+        self.portnum = portnum
+        self.ad = Aardvark(self.portnum)
+        if self.ad.handle == -1:
+            raise
+        self.pca = PCA(self.ad, debug=self.debug)
+        
