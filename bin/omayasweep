@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+import sys
+from optparse import OptionParser
+from omayabias.sisbias.sisbias import SISBias
+from omayabias.logging import logger
+import numpy
+import time
+import pandas as pd
+
+logger.name = __name__
+
+if __name__ == '__main__':
+    usage = "usage: %prog [options]"
+    parser = OptionParser(usage=usage)
+    parser.add_option("-C", "--channel", dest="channel",
+                      action="store", default=0, type="int", 
+                      help="Channel to sweep (default %default)")
+    parser.add_option("-v", "--vmin", dest="vmin",
+                      action="store", default=-25.0, type="float",
+                      help="Minimum Voltage in mV for sweep (default %default)")
+    parser.add_option("-V", "--vmax", dest="vmax",
+                      action="store", default=25.0, type="float",
+                      help="Maximum Voltage in mV for sweep (default %default)")
+    parser.add_option("-s", "--vstep", dest="vstep",
+                      action="store", default=0.1, type="float",
+                      help="Step Size in Voltage in mV for sweep (default %default)")
+    parser.add_option("-f", "--filename", dest="filename",
+                      action="store", default="sweep.txt",
+                      help="Filename for output data (default %s)")
+    (options, args) = parser.parse_args()
+    sisbias = SISBias()
+    vmin = options.vmin * 1e-3
+    vmax = options.vmax * 1e-3
+    vstep = options.vstep * 1e-3
+    sisbias.pca.SetMode(0)
+    lisdic = []
+    for v in numpy.arange(vmin, vmax+vstep, vstep):
+        dic = {}
+        sisbias.xicor[options.channel].set_mixer_voltage(v)
+        time.sleep(0.010)
+        Vs, Is = sisbias.adc.read_Vsense(options.channel), sisbias.adc.read_Isense(options.channel)
+        dic['Vj'] = v
+        dic['Vs'] = Vs
+        dic['Is'] = Is
+        print v, Vs, Is
+        lisdic.append(dic)
+    df = pd.DataFrame(lisdic)
+    df.to_csv(options.filename)
+    
+    
