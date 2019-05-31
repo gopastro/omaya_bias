@@ -4,6 +4,7 @@ OMAyA Bias System
 """
 
 from omayabias.logging import logger
+from omayabias.utils import OMAYAGeneralError
 from .Aardvark import Aardvark
 from .pca import PCA
 from .adc import ADC
@@ -17,7 +18,7 @@ class SISBias(object):
         self.portnum = portnum
         self.ad = Aardvark(self.portnum)
         if self.ad.handle == -1:
-            raise
+            raise OMAYAGeneralError("Aardvark Device in Use")
         self.pca = PCA(self.ad, debug=self.debug)
         self.adc = ADC(self.ad, debug=self.debug)
         self.xicor = {}

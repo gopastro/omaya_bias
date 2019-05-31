@@ -35,7 +35,8 @@ class SISDimensions(BaseModel):
     gelpack_label = CharField() # like A1a
     width1 = FloatField()
     width2 = FloatField()
-    
+    create_time = DateTimeField(default=datetime.datetime.now)    
+
 def create_tables():
     db.create_tables([GelPack,
                       SISDimensions,
