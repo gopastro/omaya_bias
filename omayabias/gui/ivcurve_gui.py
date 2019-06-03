@@ -4,9 +4,9 @@ from matplotlib.backends.backend_qt5agg import \
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import random
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QPushButton, QAction, QDesktopWidget, QToolTip, QPushButton, QLineEdit, QTextEdit, QComboBox, qApp, QLabel, QGridLayout, QGroupBox, QHBoxLayout, QVBoxLayout, QFileDialog)
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QPushButton, QAction, QDesktopWidget, QToolTip, QPushButton, QLineEdit, QTextEdit, QComboBox, qApp, QLabel, QGridLayout, QGroupBox, QHBoxLayout, QVBoxLayout, QFileDialog, QRadioButton)
 from PyQt5.QtGui import QFont, QIcon
-from PyQt5 import QtCore
+from PyQt5.QtCore import QTimer
 
 from omayabias.sisbias.sisbias import SISBias
 from omayabias.logging import logger
@@ -15,6 +15,8 @@ import time
 import pandas as pd
 
 logger.name = __name__
+QIcon.setThemeSearchPaths(['/usr/share/icons'])
+QIcon.setThemeName('Humanity')
 
 class IVCURVE_GUI(QMainWindow):
 
@@ -42,12 +44,13 @@ class IVCURVE_GUI(QMainWindow):
         #fileMenu = menubar.addMenu('&File')
         #fileMenu.addAction(exitAct)
 
-        mainMenu = self.menuBar()
-        self.add_menu(mainMenu)
+        self.mainMenu = self.menuBar()
+        self.add_menu(self.mainMenu)
         
         #Create a toolbar
-        #self.toolbar = self.addToolBar('Exit')
-        #self.toolbar.addAction(exitAct)
+        self.toolbar = self.addToolBar('Exit')
+        self.add_toolbar(self.toolbar)
+
         
         #self.setGeometry(10, 10, 650, 475)
         self.setWindowTitle('OMAYA Bias GUI')
@@ -63,9 +66,25 @@ class IVCURVE_GUI(QMainWindow):
         hlayout.addWidget(chan0_groupbox)
         hlayout.addWidget(chan1_groupbox)
         vlayout0 = QVBoxLayout()
+        vlayout1 = QVBoxLayout()
+        chan0_setbox = QGroupBox("Set Bias")
+        chan0_sweepbox = QGroupBox("Sweep")
+        chan1_setbox = QGroupBox("Set Bias")
+        chan1_sweepbox = QGroupBox("Sweep")
         
-        chan0_groupbox.setLayout(self.add_bias_sweep_grid(0))
-        chan1_groupbox.setLayout(self.add_bias_sweep_grid(1))
+        vlayout0.addWidget(chan0_setbox)
+        vlayout0.addWidget(chan0_sweepbox)
+        chan0_setbox.setLayout(self.add_bias_grid(0))
+        chan0_sweepbox.setLayout(self.add_bias_sweep_grid(0))
+
+        vlayout1.addWidget(chan1_setbox)
+        vlayout1.addWidget(chan1_sweepbox)
+        chan1_setbox.setLayout(self.add_bias_grid(1))
+        chan1_sweepbox.setLayout(self.add_bias_sweep_grid(1))        
+
+        
+        chan0_groupbox.setLayout(vlayout0)
+        chan1_groupbox.setLayout(vlayout1)
         
         #wid.addWidget(bias_groupbox)
         
@@ -73,27 +92,27 @@ class IVCURVE_GUI(QMainWindow):
         self.grid.addWidget(bias_groupbox, 0, 0, 5, 1)
         
         
-        m = PlotCanvas(self, width=5, height=4)
+        self.canvas = PlotCanvas(self, width=5, height=4)
 
-        button = QPushButton('Plot', self)
-        button.setToolTip('plot')
-        button.clicked.connect(m.plot)
+        # button = QPushButton('Plot', self)
+        # button.setToolTip('plot')
+        # button.clicked.connect(m.plot)
 
-        clearB = QPushButton('Clear', self)
-        clearB.setToolTip('clear plot')
-        clearB.clicked.connect(m.clear)
+        # clearB = QPushButton('Clear', self)
+        # clearB.setToolTip('clear plot')
+        # clearB.clicked.connect(m.clear)
 
-        saveB = QPushButton('Save', self)
-        saveB.setToolTip('save plot')
-        saveB.clicked.connect(m.save)
+        # saveB = QPushButton('Save', self)
+        # saveB.setToolTip('save plot')
+        # saveB.clicked.connect(m.save)
 
-        self.counter = QLabel('counter', self)
+        #self.counter = QLabel('counter', self)
         
-        self.grid.addWidget(m, 0, 1, 5, 4)
-        self.grid.addWidget(button, 5, 1, 1, 4)
-        self.grid.addWidget(clearB, 6, 1, 1, 4)
-        self.grid.addWidget(saveB, 7, 1, 1, 4)
-        self.grid.addWidget(self.counter, 8, 1)        
+        self.grid.addWidget(self.canvas, 0, 1, 7, 4)
+        #self.grid.addWidget(button, 5, 1, 1, 4)
+        #self.grid.addWidget(clearB, 6, 1, 1, 4)
+        #self.grid.addWidget(saveB, 7, 1, 1, 4)
+        #self.grid.addWidget(self.counter, 8, 1)        
         
         # vminL = QLabel('Vmin', self)
         # vminTE = QTextEdit()
@@ -141,13 +160,82 @@ class IVCURVE_GUI(QMainWindow):
         toolsMenu = mainMenu.addMenu('Tools')
         helpMenu = mainMenu.addMenu('Help')
         
-        exitButton = QAction(QIcon('exit24.png'), 'Exit', self)
+        exitButton = QAction(QIcon.fromTheme('exit'), 'Exit', self)
         exitButton.setShortcut('Ctrl+Q')
         exitButton.setStatusTip('Exit application')
         exitButton.triggered.connect(self.close)
         fileMenu.addAction(exitButton)
     
+    def add_toolbar(self, toolbar):
+        exitAct = QAction(QIcon.fromTheme('exit'), 'Exit', self)
+        #exitAct.setShortcut('Ctrl+Q')
+        exitAct.triggered.connect(self.close)
+        toolbar.addAction(exitAct)
         
+        
+    def add_bias_grid(self, channel):
+        grid = QGridLayout()
+        vset = QLabel('Vj (mV)')
+        self.bias_widgets['Vj%d' % channel] = QLineEdit()
+        self.bias_widgets['Vj%d' % channel].returnPressed.connect(lambda:self.Vjset(channel))
+        pcalab = QLabel('Bias Mode:')
+        self.bias_widgets['PCA0%d' % channel] = QRadioButton("Constant V")
+        self.bias_widgets['PCA1%d' % channel] = QRadioButton("Constant R")
+        self.bias_widgets['PCA0%d' % channel].setChecked(True)
+        self.bias_widgets['PCA0%d' % channel].toggled.connect(lambda:self.pcastate(self.bias_widgets['PCA0%d' % channel]))
+        self.bias_widgets['PCA1%d' % channel].toggled.connect(lambda:self.pcastate(self.bias_widgets['PCA1%d' % channel]))
+        wid = QWidget()
+        hlayout = QHBoxLayout()
+        hlayout.addWidget(self.bias_widgets['PCA0%d' % channel])
+        hlayout.addWidget(self.bias_widgets['PCA1%d' % channel])
+        wid.setLayout(hlayout)
+        Islab = QLabel('Is (uA):')
+        Vslab = QLabel('Vs (mV):')
+        self.bias_widgets['IsLabel%d' % channel] = QLabel('Is (uA)')
+        self.bias_widgets['VsLabel%d' % channel] = QLabel('Vs (mV)')
+        font = QFont("Times", 12, QFont.Bold)
+        self.bias_widgets['IsLabel%d' % channel].setFont(font)
+        self.bias_widgets['VsLabel%d' % channel].setFont(font)
+        self.add_bias_monitor_hooks()
+        grid.addWidget(vset, 0, 0, 1, 2)
+        grid.addWidget(self.bias_widgets['Vj%d' % channel],  0, 2, 1, 2)
+        grid.addWidget(pcalab, 1, 0, 1, 2)
+        grid.addWidget(wid, 1, 2, 1, 2)
+        grid.addWidget(Islab, 2, 0)
+        grid.addWidget(self.bias_widgets['IsLabel%d' % channel], 2, 1)
+        grid.addWidget(Vslab, 2, 2)
+        grid.addWidget(self.bias_widgets['VsLabel%d' % channel], 2, 3)
+        return grid
+
+    def Vjset(self, channel):
+        try:
+            Vj = float(self.bias_widgets['Vj%d' % channel].text()) * 1e-3
+        except ValueError:
+            Vj = 0.0 * 1e-3
+        self.sisbias.xicor[channel].set_mixer_voltage(Vj)
+            
+    def pcastate(self, btn):
+        txt = btn.text()
+        print txt
+        #pca_state = int(txt[3])
+        #channel = int(txt[4])
+        if btn.isChecked():
+            if txt == "Constant V":
+                self.sisbias.pca.SetMode(0)
+            else:
+                self.sisbias.pca.SetMode(1)
+            
+    def add_bias_monitor_hooks(self):
+        self.bias_timer = QTimer()
+        self.bias_timer.timeout.connect(self.update_bias_labels)
+        self.bias_timer.start(3000)
+    
+    def update_bias_labels(self):
+        for channel in (0, 1):
+            Vs, Is = self.sisbias.adc.read_Vsense(channel), self.sisbias.adc.read_Isense(channel)
+            self.bias_widgets['IsLabel%d' % channel].setText("%.2f" % (Is/1e-6))
+            self.bias_widgets['VsLabel%d' % channel].setText("%.2f" % (Vs/1e-3))
+
     def add_bias_sweep_grid(self, channel):
         grid = QGridLayout()
         vminL = QLabel('Vmin (mV)')
@@ -162,6 +250,9 @@ class IVCURVE_GUI(QMainWindow):
         self.bias_widgets['savebtn%d' % channel] = QPushButton('Save Channel %d' % channel, self)
         self.bias_widgets['savebtn%d' % channel].setToolTip('Save IV Curve')
         self.bias_widgets['savebtn%d' % channel].clicked.connect(lambda:self.save_sweep(self.bias_widgets['savebtn%d' % channel]))
+        self.bias_widgets['plotbtn%d' % channel] = QPushButton('Plot IV Curve')
+        self.bias_widgets['plotbtn%d' % channel].setToolTip('Plot IV Curve')
+        self.bias_widgets['plotbtn%d' % channel].clicked.connect(lambda:self.plot_ivcurve(channel))
         
         grid.addWidget(vminL, 0, 0)
         grid.addWidget(self.bias_widgets['Vmin%d' % channel],  0, 1)
@@ -171,6 +262,7 @@ class IVCURVE_GUI(QMainWindow):
         grid.addWidget(self.bias_widgets['Vstep%d' % channel],  2, 1)
         grid.addWidget(self.bias_widgets['sweepbtn%d' % channel], 3, 0, 1, 2)
         grid.addWidget(self.bias_widgets['savebtn%d' % channel], 4, 0, 1, 2)
+        grid.addWidget(self.bias_widgets['plotbtn%d' % channel], 5, 0, 1, 2)
         return grid
         
     def center(self):
@@ -197,6 +289,7 @@ class IVCURVE_GUI(QMainWindow):
         except ValueError: 
             vstep = 0.1
         vmin, vmax, vstep = vmin * 1e-3, vmax * 1e-3, vstep * 1e-3
+        self.bias_timer.stop()
         self.sisbias.pca.SetMode(0)
         lisdic = []
         for v in numpy.arange(vmin, vmax+vstep, vstep):
@@ -211,7 +304,8 @@ class IVCURVE_GUI(QMainWindow):
             lisdic.append(dic)
         self.sweep_data[channel] = pd.DataFrame(lisdic)
         #self.sweep_data[channel].to_csv('channel%d.csv' % channel)
-
+        self.bias_timer.start(3000)
+        
     def save_sweep(self, btn):
         txt = btn.text()
         channel = int(txt.split('Save Channel ')[1])
@@ -223,6 +317,8 @@ class IVCURVE_GUI(QMainWindow):
             print "Saving Channel %d data to %s" % (channel, fileName)
             self.sweep_data[channel].to_csv(fileName)
             
+    def plot_ivcurve(self, channel):
+        self.canvas.plot(self.sweep_data[channel], channel)
         
 class PlotCanvas(FigureCanvas):
 
@@ -236,15 +332,22 @@ class PlotCanvas(FigureCanvas):
         FigureCanvas.setSizePolicy(self, QSizePolicy.Expanding,
                                    QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
-        self.plot()
+        self.plot_test()
 
-    def plot(self):
+    def plot_test(self):
         data = [random.random() for i in range(25)]
         self.axes.plot(data, 'r-')
         
         self.axes.set_title('SIS Channel 0')
         self.draw()
-    
+
+    def plot(self, df, channel=0, clear=True):
+        if clear:
+            self.clear()
+        self.axes.plot(df.Vj/1e-3, df.Is/1e-6, 'o-', label='Channel %d' % channel)
+        self.axes.set_title('SIS Channel %d' % channel)
+        self.draw()
+        
     def clear(self):
         self.axes.cla()
 
@@ -257,13 +360,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     ivcurve_gui = IVCURVE_GUI()
     
-    def update_label():
-       current_time = str(datetime.datetime.now().second)
-       ivcurve_gui.counter.setText(current_time)
 
-    timer = QtCore.QTimer()
-    timer.timeout.connect(update_label)
-    timer.start(1000)
 
     sys.exit(app.exec_())
         
