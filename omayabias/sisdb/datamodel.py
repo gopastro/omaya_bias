@@ -33,10 +33,19 @@ class SISDimensions(BaseModel):
     sis2letter = CharField()
     sisrowcol = CharField()
     gelpack_label = CharField() # like A1a
-    width1 = FloatField()
-    width2 = FloatField()
+    width1 = FloatField(null=True)
+    width2 = FloatField(null=True)
+    leftheight = FloatField(null=True)
+    middleheight = FloatField(null=True)
+    rightheight = FloatField(null=True)
     create_time = DateTimeField(default=datetime.datetime.now)    
 
+    class Meta:
+        indexes = (
+            # creates a unique on the 3 items
+            (('gelpack', 'sis2letter', 'sisrowcol', 'gelpack_label'), True),
+            )
+        
 def create_tables():
     db.create_tables([GelPack,
                       SISDimensions,
