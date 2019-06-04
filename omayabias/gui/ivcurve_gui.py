@@ -28,10 +28,11 @@ class IVCURVE_GUI(QMainWindow):
         self.bias_widgets = {}
         self.sisbias = SISBias()
         self.sweep_data = {}
-        self.initUI()
+        self.devsel_cb = {}
         self.devices = [None, None]
         self.sweep_time = [None, None]
         self.skiprows = 2
+        self.initUI()
         
     def initUI(self):
         """initialize GUI window"""
@@ -182,26 +183,27 @@ class IVCURVE_GUI(QMainWindow):
     def add_select_device_grid(self, channel):
         grid = QGridLayout()
         dset = QLabel('Select Device: ')
-        self.devsel_cb = QComboBox()
+        self.devsel_cb[channel] = QComboBox()
         lis = []
         for sisd in SISDimensions.select().order_by(SISDimensions.id):
             lis.append("GP# %s: %s %s %s" % (sisd.gelpack.description, sisd.sis2letter, sisd.sisrowcol, sisd.gelpack_label))
-        self.devsel_cb.addItems(lis)
+        self.devsel_cb[channel].addItems(lis)
         if channel == 0:
-            self.devsel_cb.currentIndexChanged.connect(self.dev_selection_change0)
+            self.devsel_cb[channel].currentIndexChanged.connect(self.dev_selection_change0)
         else:
-            self.devsel_cb.currentIndexChanged.connect(self.dev_selection_change1)
+            self.devsel_cb[channel].currentIndexChanged.connect(self.dev_selection_change1)
         grid.addWidget(dset, 0, 0)
-        grid.addWidget(self.devsel_cb, 0, 1)
+        grid.addWidget(self.devsel_cb[channel], 0, 1)
+        print self.devsel_cb.keys()
         return grid
 
     def dev_selection_change0(self, i):
         #print i, self.devsel_cb.currentText()
-        self.devices[0] = self.devsel_cb.currentText()
+        self.devices[0] = self.devsel_cb[0].currentText()
         
     def dev_selection_change1(self, i):
         #print i, self.devsel_cb.currentText()
-        self.devices[1] = self.devsel_cb.currentText()
+        self.devices[1] = self.devsel_cb[1].currentText()
         
     def add_bias_grid(self, channel):
         grid = QGridLayout()
