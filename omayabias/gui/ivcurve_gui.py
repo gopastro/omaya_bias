@@ -21,13 +21,8 @@ QIcon.setThemeName('Humanity')
 class IVCURVE_GUI(QMainWindow):
 
     def __init__(self):
-        """initialize 'GUI' class"""
+        """initialize 'IVCURVE_GUI' class"""
         super(IVCURVE_GUI,self).__init__()
-        self.left = 10
-        self.top = 10
-        self.title = 'Canvas Test'
-        self.width = 640
-        self.heigth = 400
         self.bias_widgets = {}
         self.sisbias = SISBias()
         self.sweep_data = {}
@@ -58,7 +53,7 @@ class IVCURVE_GUI(QMainWindow):
         wid = QWidget(self)
         self.setCentralWidget(wid)
         
-        bias_groupbox = QGroupBox("Set Bias")
+        bias_groupbox = QGroupBox()
         hlayout = QHBoxLayout()
         bias_groupbox.setLayout(hlayout)
         chan0_groupbox = QGroupBox("Channel 0")
@@ -98,9 +93,9 @@ class IVCURVE_GUI(QMainWindow):
         # button.setToolTip('plot')
         # button.clicked.connect(m.plot)
 
-        # clearB = QPushButton('Clear', self)
-        # clearB.setToolTip('clear plot')
-        # clearB.clicked.connect(m.clear)
+        clearB = QPushButton('Clear', self)
+        clearB.setToolTip('clear plot')
+        clearB.clicked.connect(self.canvas.clear)
 
         # saveB = QPushButton('Save', self)
         # saveB.setToolTip('save plot')
@@ -109,6 +104,7 @@ class IVCURVE_GUI(QMainWindow):
         #self.counter = QLabel('counter', self)
         
         self.grid.addWidget(self.canvas, 0, 1, 7, 4)
+        self.grid.addWidget(clearB, 0, 2)
         #self.grid.addWidget(button, 5, 1, 1, 4)
         #self.grid.addWidget(clearB, 6, 1, 1, 4)
         #self.grid.addWidget(saveB, 7, 1, 1, 4)
@@ -350,7 +346,8 @@ class PlotCanvas(FigureCanvas):
         
     def clear(self):
         self.axes.cla()
-
+        self.draw()
+        
     def save(self):
         self.fig.savefig('test.png')
 
