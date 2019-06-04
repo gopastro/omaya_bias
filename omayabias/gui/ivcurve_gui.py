@@ -10,6 +10,8 @@ from PyQt5.QtCore import QTimer
 
 from omayabias.sisbias.sisbias import SISBias
 from omayabias.logging import logger
+from omayabias.sisdb.datamodel import GelPack, SISDimensions
+
 import numpy
 import time
 import pandas as pd
@@ -27,7 +29,10 @@ class IVCURVE_GUI(QMainWindow):
         self.sisbias = SISBias()
         self.sweep_data = {}
         self.initUI()
-
+        self.devices = [None, None]
+        self.sweep_time = [None, None]
+        self.skiprows = 2
+        
     def initUI(self):
         """initialize GUI window"""
 
@@ -62,16 +67,22 @@ class IVCURVE_GUI(QMainWindow):
         hlayout.addWidget(chan1_groupbox)
         vlayout0 = QVBoxLayout()
         vlayout1 = QVBoxLayout()
+        chan0_seldev_box = QGroupBox("Select Device")
+        chan1_seldev_box = QGroupBox("Select Device")
         chan0_setbox = QGroupBox("Set Bias")
         chan0_sweepbox = QGroupBox("Sweep")
         chan1_setbox = QGroupBox("Set Bias")
         chan1_sweepbox = QGroupBox("Sweep")
-        
+
+        chan0_seldev_box.setLayout(self.add_select_device_grid(0))
+        chan1_seldev_box.setLayout(self.add_select_device_grid(1))
+        vlayout0.addWidget(chan0_seldev_box)
         vlayout0.addWidget(chan0_setbox)
         vlayout0.addWidget(chan0_sweepbox)
         chan0_setbox.setLayout(self.add_bias_grid(0))
         chan0_sweepbox.setLayout(self.add_bias_sweep_grid(0))
 
+        vlayout1.addWidget(chan1_seldev_box)        
         vlayout1.addWidget(chan1_setbox)
         vlayout1.addWidget(chan1_sweepbox)
         chan1_setbox.setLayout(self.add_bias_grid(1))
@@ -168,6 +179,29 @@ class IVCURVE_GUI(QMainWindow):
         exitAct.triggered.connect(self.close)
         toolbar.addAction(exitAct)
         
+    def add_select_device_grid(self, channel):
+        grid = QGridLayout()
+        dset = QLabel('Select Device: ')
+        self.devsel_cb = QComboBox()
+        lis = []
+        for sisd in SISDimensions.select().order_by(SISDimensions.id):
+            lis.append("GP# %s: %s %s %s" % (sisd.gelpack.description, sisd.sis2letter, sisd.sisrowcol, sisd.gelpack_label))
+        self.devsel_cb.addItems(lis)
+        if channel == 0:
+            self.devsel_cb.currentIndexChanged.connect(self.dev_selection_change0)
+        else:
+            self.devsel_cb.currentIndexChanged.connect(self.dev_selection_change1)
+        grid.addWidget(dset, 0, 0)
+        grid.addWidget(self.devsel_cb, 0, 1)
+        return grid
+
+    def dev_selection_change0(self, i):
+        #print i, self.devsel_cb.currentText()
+        self.devices[0] = self.devsel_cb.currentText()
+        
+    def dev_selection_change1(self, i):
+        #print i, self.devsel_cb.currentText()
+        self.devices[1] = self.devsel_cb.currentText()
         
     def add_bias_grid(self, channel):
         grid = QGridLayout()
@@ -300,6 +334,7 @@ class IVCURVE_GUI(QMainWindow):
             lisdic.append(dic)
         self.sweep_data[channel] = pd.DataFrame(lisdic)
         #self.sweep_data[channel].to_csv('channel%d.csv' % channel)
+        self.sweep_time[channel] = datetime.datetime.now().ctime()
         self.bias_timer.start(3000)
         
     def save_sweep(self, btn):
@@ -309,12 +344,16 @@ class IVCURVE_GUI(QMainWindow):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         fileName, _ = QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()","","All Files (*);;Text Files (*.csv)", options=options)
+        metadata = pd.Series([{'device': self.devices[channel]}, {'channel': channel},
+                              {'date': self.sweep_time[channel]}])
         if fileName:
             print "Saving Channel %d data to %s" % (channel, fileName)
-            self.sweep_data[channel].to_csv(fileName)
+            with open(fileName, 'w') as fout:
+                metadata.to_csv(fout, index=False)
+                self.sweep_data[channel].to_csv(fout, index=False)
             
     def plot_ivcurve(self, channel):
-        self.canvas.plot(self.sweep_data[channel], channel)
+        self.canvas.plot(self.sweep_data[channel], channel, clear=False)
         
 class PlotCanvas(FigureCanvas):
 
@@ -328,7 +367,7 @@ class PlotCanvas(FigureCanvas):
         FigureCanvas.setSizePolicy(self, QSizePolicy.Expanding,
                                    QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
-        self.plot_test()
+        #self.plot_test()
 
     def plot_test(self):
         data = [random.random() for i in range(25)]
@@ -342,6 +381,7 @@ class PlotCanvas(FigureCanvas):
             self.clear()
         self.axes.plot(df.Vj/1e-3, df.Is/1e-6, 'o-', label='Channel %d' % channel)
         self.axes.set_title('SIS Channel %d' % channel)
+        self.axes.legend(loc='best')
         self.draw()
         
     def clear(self):
