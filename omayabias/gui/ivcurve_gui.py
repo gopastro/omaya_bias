@@ -7,7 +7,7 @@ import random
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QPushButton, QAction, QDesktopWidget, QToolTip, QPushButton, QLineEdit, QTextEdit, QComboBox, qApp, QLabel, QGridLayout, QGroupBox, QHBoxLayout, QVBoxLayout, QFileDialog, QRadioButton)
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import QTimer
-
+from PyQt5 import QtGui, QtCore
 from omayabias.sisbias.sisbias import SISBias
 from omayabias.logging import logger
 from omayabias.sisdb.datamodel import GelPack, SISDimensions
@@ -52,7 +52,6 @@ class IVCURVE_GUI(QMainWindow):
         self.toolbar = self.addToolBar('Exit')
         self.add_toolbar(self.toolbar)
 
-        
         #self.setGeometry(10, 10, 650, 475)
         self.setWindowTitle('OMAYA Bias GUI')
 
@@ -88,74 +87,21 @@ class IVCURVE_GUI(QMainWindow):
         vlayout1.addWidget(chan1_sweepbox)
         chan1_setbox.setLayout(self.add_bias_grid(1))
         chan1_sweepbox.setLayout(self.add_bias_sweep_grid(1))        
-
         
         chan0_groupbox.setLayout(vlayout0)
         chan1_groupbox.setLayout(vlayout1)
         
-        #wid.addWidget(bias_groupbox)
-        
         self.grid = QGridLayout()
-        self.grid.addWidget(bias_groupbox, 0, 0, 5, 1)
-        
+        self.grid.addWidget(bias_groupbox, 0, 0, 5, 1)      
         
         self.canvas = PlotCanvas(self, width=5, height=4)
-
-        # button = QPushButton('Plot', self)
-        # button.setToolTip('plot')
-        # button.clicked.connect(m.plot)
 
         clearB = QPushButton('Clear', self)
         clearB.setToolTip('clear plot')
         clearB.clicked.connect(self.canvas.clear)
-
-        # saveB = QPushButton('Save', self)
-        # saveB.setToolTip('save plot')
-        # saveB.clicked.connect(m.save)
-
-        #self.counter = QLabel('counter', self)
         
         self.grid.addWidget(self.canvas, 0, 1, 7, 4)
-        self.grid.addWidget(clearB, 0, 2)
-        #self.grid.addWidget(button, 5, 1, 1, 4)
-        #self.grid.addWidget(clearB, 6, 1, 1, 4)
-        #self.grid.addWidget(saveB, 7, 1, 1, 4)
-        #self.grid.addWidget(self.counter, 8, 1)        
-        
-        # vminL = QLabel('Vmin', self)
-        # vminTE = QTextEdit()
-
-        # vmaxL = QLabel('Vmax', self)
-        # vmaxTE = QTextEdit()
-        
-        # vstepL = QLabel('Vstep', self)
-        # vstepTE = QTextEdit()
-
-
-        # #self.chanL = QLabel('Channel')
-        # #self.chanCombo = QComboBox()
-        # #self.chanCombo.addItem("0")
-        # #self.chanCombo.addItem("1")
-
-
-
-
-
-
-        # self.grid.setSpacing(10)
-
-        # self.grid.addWidget(m, 1, 0)
-        # self.grid.addWidget(button, 2, 0)
-        # self.grid.addWidget(clearB, 3, 0)
-        # self.grid.addWidget(saveB, 4, 0)
-        # self.grid.addWidget(vminL, 5, 0)
-        # self.grid.addWidget(vminTE, 5, 1)
-        # self.grid.addWidget(vmaxL, 6, 0)
-        # self.grid.addWidget(vmaxTE, 6, 1)
-        # self.grid.addWidget(vstepL, 7, 0)
-        # self.grid.addWidget(vstepTE, 7, 1)
-        # self.grid.addWidget(self.counter, 8, 0)
-
+        self.grid.addWidget(clearB, 0, 5)
         wid.setLayout(self.grid)        
 
         self.show()
@@ -183,7 +129,9 @@ class IVCURVE_GUI(QMainWindow):
     def add_select_device_grid(self, channel):
         grid = QGridLayout()
         dset = QLabel('Select Device: ')
+        #self.devsel_cb[channel] = AdvComboBox(self)
         self.devsel_cb[channel] = QComboBox()
+        self.devsel_cb[channel].setEditable(True)
         lis = []
         for sisd in SISDimensions.select().order_by(SISDimensions.id):
             lis.append("GP# %s: %s %s %s" % (sisd.gelpack.description, sisd.sis2letter, sisd.sisrowcol, sisd.gelpack_label))
@@ -393,13 +341,45 @@ class PlotCanvas(FigureCanvas):
     def save(self):
         self.fig.savefig('test.png')
 
+class AdvComboBox(QComboBox):
+    
+    def __init__(self, parent=None):
+        super(AdvComboBox, self).__init__(parent)
+
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.setEditable(True)
+
+        # add a filter model to filter matching items
+        self.pFilterModel = QtGui.QSortFilterProxyModel(self)
+        self.pFilterModel.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.pFilterModel.setSourceModel(self.model())
+
+        # add a completer, which uses the filter model
+        self.completer = QtGui.QCompleter(self.pFilterModel, self)
+        # always show all (filtered) completions
+        self.completer.setCompletionMode(QtGui.QCompleter.UnfilteredPopupCompletion)
+
+        self.setCompleter(self.completer)
+
+        # connect signals
+
+        def filter(text):
+            print "Edited: ", text, "type: ", type(text)
+            self.pFilterModel.setFilterFixedString(str(text))
+
+        self.lineEdit().textEdited[unicode].connect(filter)
+        self.completer.activated.connect(self.on_completer_activated)
+
+    # on selection of an item from the completer, select the corresponding item from combobox
+    def on_completer_activated(self, text):
+        if text:
+            index = self.findText(str(text))
+            self.setCurrentIndex(index)
 
 if __name__ == '__main__':
 
     app = QApplication(sys.argv)
     ivcurve_gui = IVCURVE_GUI()
     
-
-
     sys.exit(app.exec_())
         
