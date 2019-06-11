@@ -11,6 +11,8 @@ from PyQt5 import QtGui, QtCore
 from omayabias.sisbias.sisbias import SISBias
 from omayabias.logging import logger
 from omayabias.sisdb.datamodel import GelPack, SISDimensions
+from omayabias.lakeshore.lakeshore_218 import Lakeshore
+from omayabias.lakeshore.myGpib import Gpib
 
 import numpy
 import time
@@ -102,6 +104,15 @@ class IVCURVE_GUI(QMainWindow):
         
         self.grid.addWidget(self.canvas, 0, 1, 7, 4)
         self.grid.addWidget(clearB, 0, 5)
+
+        self.lk = Lakeshore()
+        self.temp_labels = {6:''}
+
+        for chan in self.temp_labels.keys():
+            self.temp_labels[chan] = QLabel()
+            self.grid.addWidget(self.temp_labels[6], 0, 6)
+
+        self.add_temp_monitor_hooks()
         wid.setLayout(self.grid)        
 
         self.show()
@@ -113,6 +124,8 @@ class IVCURVE_GUI(QMainWindow):
         searchMenu = mainMenu.addMenu('Search')
         toolsMenu = mainMenu.addMenu('Tools')
         helpMenu = mainMenu.addMenu('Help')
+
+        pcaMenu = QMenu('PCA', self)
         
         exitButton = QAction(QIcon.fromTheme('exit'), 'Exit', self)
         exitButton.setShortcut('Ctrl+Q')
@@ -216,6 +229,16 @@ class IVCURVE_GUI(QMainWindow):
             self.bias_widgets['IsLabel%d' % channel].setText("%.2f" % (Is/1e-6))
             self.bias_widgets['VsLabel%d' % channel].setText("%.2f" % (Vs/1e-3))
 
+    def add_temp_monitor_hooks(self):
+        self.temp_timer = QTimer()
+        self.temp_timer.timeout.connect(self.update_temp_labels)
+        self.temp_timer.start(3000)
+
+    def update_temp_labels(self):
+        T = self.lk.read_temperature(0)
+        for chan in self.temp_labels.keys():
+            self.temp_labels[chan].setText("%.2f" % (T[chan]))
+            
     def add_bias_sweep_grid(self, channel):
         grid = QGridLayout()
         vminL = QLabel('Vmin (mV)')
