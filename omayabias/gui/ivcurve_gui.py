@@ -29,6 +29,7 @@ class IVCURVE_GUI(QMainWindow):
         super(IVCURVE_GUI,self).__init__()
         self.bias_widgets = {}
         self.sisbias = SISBias()
+        self.lk = Lakeshore()
         self.sweep_data = {}
         self.devsel_cb = {}
         self.devices = [None, None]
@@ -59,14 +60,25 @@ class IVCURVE_GUI(QMainWindow):
 
         wid = QWidget(self)
         self.setCentralWidget(wid)
-        
+
+        master_groupbox = QGroupBox()
+        vlayout = QVBoxLayout()
+        master_groupbox.setLayout(vlayout)
         bias_groupbox = QGroupBox()
         hlayout = QHBoxLayout()
         bias_groupbox.setLayout(hlayout)
+        temp_groupbox = QGroupBox("Temperture Monitor")
+        channels = ['1', '2', '3', '4', '5', '6', '7', '8']
+        temp_groupbox.setLayout(self.add_temp_monitor_grid(channels))
+        
+        vlayout.addWidget(bias_groupbox)
+        vlayout.addWidget(temp_groupbox)
+    
         chan0_groupbox = QGroupBox("Channel 0")
         chan1_groupbox = QGroupBox("Channel 1")
         hlayout.addWidget(chan0_groupbox)
         hlayout.addWidget(chan1_groupbox)
+        
         vlayout0 = QVBoxLayout()
         vlayout1 = QVBoxLayout()
         chan0_seldev_box = QGroupBox("Select Device")
@@ -94,25 +106,20 @@ class IVCURVE_GUI(QMainWindow):
         chan1_groupbox.setLayout(vlayout1)
         
         self.grid = QGridLayout()
-        self.grid.addWidget(bias_groupbox, 0, 0, 5, 1)      
-        
-        self.canvas = PlotCanvas(self, width=5, height=4)
+        self.grid.addWidget(master_groupbox, 0, 0, 5, 1)      
 
-        clearB = QPushButton('Clear', self)
+        canvas_groupbox = QGroupBox("IV Curve Plot")
+        self.canvas = PlotCanvas(self, width=5, height=4)
+        clearB = QPushButton('Clear Plot', self)
         clearB.setToolTip('clear plot')
         clearB.clicked.connect(self.canvas.clear)
+        vlayout2 = QVBoxLayout()
+        vlayout2.addWidget(self.canvas)
+        vlayout2.addWidget(clearB)
+        canvas_groupbox.setLayout(vlayout2)
         
-        self.grid.addWidget(self.canvas, 0, 1, 7, 4)
-        self.grid.addWidget(clearB, 0, 5)
+        self.grid.addWidget(canvas_groupbox, 0, 1, 7, 4)
 
-        self.lk = Lakeshore()
-        self.temp_labels = {6:''}
-
-        for chan in self.temp_labels.keys():
-            self.temp_labels[chan] = QLabel()
-            self.grid.addWidget(self.temp_labels[6], 0, 6)
-
-        self.add_temp_monitor_hooks()
         wid.setLayout(self.grid)        
 
         self.show()
@@ -138,11 +145,29 @@ class IVCURVE_GUI(QMainWindow):
         #exitAct.setShortcut('Ctrl+Q')
         exitAct.triggered.connect(self.close)
         toolbar.addAction(exitAct)
-        
+
+    def add_temp_monitor_grid(self, channels):
+        grid = QGridLayout()
+        bf = QFont("Times", 12, QFont.Bold)
+        self.temp_labels = {}
+        self.temp_widgets = {}
+        i = 0
+        for chan in channels:
+            self.temp_labels[chan] = QLabel()
+            self.temp_labels[chan].setText("%s" %chan)
+            self.temp_widgets[chan] = QLabel()
+            self.temp_widgets[chan].setText("")
+            self.temp_widgets[chan].setFont(bf)
+            grid.addWidget(self.temp_labels[chan], 0, i+1)
+            grid.addWidget(self.temp_widgets[chan], 0, i+2)
+            i += 2
+        self.add_temp_monitor_hooks()
+        return grid
+
+            
     def add_select_device_grid(self, channel):
         grid = QGridLayout()
         dset = QLabel('Select Device: ')
-        #self.devsel_cb[channel] = AdvComboBox(self)
         self.devsel_cb[channel] = QComboBox()
         self.devsel_cb[channel].setEditable(True)
         lis = []
@@ -155,7 +180,7 @@ class IVCURVE_GUI(QMainWindow):
             self.devsel_cb[channel].currentIndexChanged.connect(self.dev_selection_change1)
         grid.addWidget(dset, 0, 0)
         grid.addWidget(self.devsel_cb[channel], 0, 1)
-        print self.devsel_cb.keys()
+        #print self.devsel_cb.keys()
         return grid
 
     def dev_selection_change0(self, i):
@@ -231,13 +256,15 @@ class IVCURVE_GUI(QMainWindow):
 
     def add_temp_monitor_hooks(self):
         self.temp_timer = QTimer()
-        self.temp_timer.timeout.connect(self.update_temp_labels)
+        self.temp_timer.timeout.connect(self.update_temp_widgets)
         self.temp_timer.start(3000)
 
-    def update_temp_labels(self):
+    def update_temp_widgets(self):
         T = self.lk.read_temperature(0)
-        for chan in self.temp_labels.keys():
-            self.temp_labels[chan].setText("%.2f" % (T[chan]))
+        i = 1
+        for chan in self.temp_widgets.keys():
+            self.temp_widgets[chan].setText("%.2f" % (T[i]))
+            i += 1
             
     def add_bias_sweep_grid(self, channel):
         grid = QGridLayout()
