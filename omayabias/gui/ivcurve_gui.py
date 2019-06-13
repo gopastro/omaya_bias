@@ -1,6 +1,6 @@
 import sys, datetime
 from matplotlib.backends.backend_qt5agg import \
-    FigureCanvasQTAgg as FigureCanvas
+    (FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT)
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import random
@@ -13,7 +13,6 @@ from omayabias.logging import logger
 from omayabias.sisdb.datamodel import GelPack, SISDimensions
 from omayabias.lakeshore.lakeshore_218 import Lakeshore
 from omayabias.lakeshore.myGpib import Gpib
-
 import numpy
 import time
 import pandas as pd
@@ -67,7 +66,7 @@ class IVCURVE_GUI(QMainWindow):
         bias_groupbox = QGroupBox()
         hlayout = QHBoxLayout()
         bias_groupbox.setLayout(hlayout)
-        temp_groupbox = QGroupBox("Temperture Monitor")
+        temp_groupbox = QGroupBox("Temperature Monitor")
         channels = ['1', '2', '3', '4', '5', '6', '7', '8']
         temp_groupbox.setLayout(self.add_temp_monitor_grid(channels))
         
@@ -116,6 +115,11 @@ class IVCURVE_GUI(QMainWindow):
         vlayout2 = QVBoxLayout()
         vlayout2.addWidget(self.canvas)
         vlayout2.addWidget(clearB)
+        self.addToolBar(QtCore.Qt.BottomToolBarArea,
+                        NavigationToolbar2QT(self.canvas, self))
+        #vlayout2.addWidget(self.addToolBar(QtCore.Qt.BottomToolBarArea,
+        #                                   NavigationToolbar2QT(self.canvas, self)))
+        #vlayout2.addWidget(self.addToolBar(NavigationToolbar2QT(self.canvas, self)))
         canvas_groupbox.setLayout(vlayout2)
         
         self.grid.addWidget(canvas_groupbox, 0, 1, 7, 4)
