@@ -46,14 +46,23 @@ class SISDimensions(BaseModel):
             (('gelpack', 'sis2letter', 'sisrowcol', 'gelpack_label'), True),
             )
         
+
+class IVCurveFile(BaseModel):
+    sis = ForeignKeyField(SISDimensions)
+    filename = CharField()
+    measured_time = DateTimeField()
+    create_time = DateTimeField(default=datetime.datetime.now)    
+
 def create_tables():
     db.create_tables([GelPack,
                       SISDimensions,
+                      IVCurveFile, 
                       ])
 
 def drop_tables():
     db.drop_tables([GelPack,
                     SISDimensions,
+                    IVCurveFile
                     ])
 
 
