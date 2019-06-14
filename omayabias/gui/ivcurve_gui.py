@@ -10,7 +10,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5 import QtGui, QtCore
 from omayabias.sisbias.sisbias import SISBias
 from omayabias.logging import logger
-from omayabias.sisdb.datamodel import GelPack, SISDimensions
+from omayabias.sisdb.datamodel import GelPack, SISDimensions, Temperature
 from omayabias.lakeshore.lakeshore_218 import Lakeshore
 from omayabias.lakeshore.myGpib import Gpib
 import numpy
@@ -265,6 +265,12 @@ class IVCURVE_GUI(QMainWindow):
 
     def update_temp_widgets(self):
         T = self.lk.read_temperature(0)
+        tdic = {}
+        for chan in range(1, 9):
+            if chan not in (4, 8):
+                tdic['temp%d' % chan] = T[chan]
+        temperature = Temperature(**tdic)
+        temperature.save()
         i = 1
         for chan in self.temp_widgets.keys():
             self.temp_widgets[chan].setText("%.2f" % (T[i]))
