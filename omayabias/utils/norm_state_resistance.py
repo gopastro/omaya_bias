@@ -31,6 +31,6 @@ def norm_state_res(data_array):
     avg_int_err=np.sqrt(err_pos[1,1]+err_neg[1,1])
 
     resistance = 1/avg_slope
-    resistance_err=avg_slope_err/(avg_slope**2)
+    resistance_err=avg_slope_err
     #print(avg_slope_err,avg_int_err,resistance, resistance_err)
     return [[resistance, resistance_err],[avg_slope,avg_slope_err],[avg_int, avg_int_err]]
