@@ -24,20 +24,20 @@ QIcon.setThemeName('Humanity')
 class IVCURVE_GUI(QMainWindow):
 
     def __init__(self):
-        """initialize 'IVCURVE_GUI' class"""
+        """Initializes some GUI parameters and calls 'initUI()'"""
         super(IVCURVE_GUI,self).__init__()
-        self.bias_widgets = {}
-        self.sisbias = SISBias()
-        self.lk = Lakeshore()
-        self.sweep_data = {}
-        self.devsel_cb = {}
+        self.bias_widgets = {} #dic for Bias widgets
+        self.sisbias = SISBias() #class to control SISBias devices
+        self.lk = Lakeshore() #class to control Lakeshore Temp Monitor
+        self.sweep_data = {} #dic for storing sweep data
+        self.devsel_cb = {} 
         self.devices = [None, None]
         self.sweep_time = [None, None]
-        self.skiprows = 2
-        self.initUI()
+        self.skiprows = 2 #size of header for database file
+        self.initUI() #this function initializes the widgets and layouts
         
     def initUI(self):
-        """initialize GUI window"""
+        """Initializes widgets and layout for the IVCURVE_GUI window"""
 
         #Create a status bar
         self.statusBar().showMessage('Ready')
@@ -46,7 +46,6 @@ class IVCURVE_GUI(QMainWindow):
         #menubar = self.menuBar()
         #fileMenu = menubar.addMenu('&File')
         #fileMenu.addAction(exitAct)
-
         self.mainMenu = self.menuBar()
         self.add_menu(self.mainMenu)
         
@@ -54,32 +53,41 @@ class IVCURVE_GUI(QMainWindow):
         self.toolbar = self.addToolBar('Exit')
         self.add_toolbar(self.toolbar)
 
-        #self.setGeometry(10, 10, 650, 475)
+        #Set title for GUI window
         self.setWindowTitle('OMAYA Bias GUI')
 
+        #Initializes widget 'wid' that layouts will lock to
         wid = QWidget(self)
         self.setCentralWidget(wid)
 
+        #Master Groupbox
         master_groupbox = QGroupBox()
         vlayout = QVBoxLayout()
-        master_groupbox.setLayout(vlayout)
+        master_groupbox.setLayout(vlayout)#Sets 'master_groupbox' to a Vertical Layout
+
+        #Bias Groupbox
         bias_groupbox = QGroupBox()
         hlayout = QHBoxLayout()
-        bias_groupbox.setLayout(hlayout)
+        bias_groupbox.setLayout(hlayout)#Sets 'bias_groupbox' to a Hor. Layout
+
+        #Temp Monitor Groupbox
         temp_groupbox = QGroupBox("Temperature Monitor")
         channels = ['1', '2', '3', '4', '5', '6', '7', '8']
+        #'add_temp_monitor_grid' returns a GridLayout populated w/ temp widgets
+        #Temp Monitor Groupbox is then set to this grid
         temp_groupbox.setLayout(self.add_temp_monitor_grid(channels))
-        
+
+        #Master --> Bias + Temp Monitor (vertically oriented)
         vlayout.addWidget(bias_groupbox)
         vlayout.addWidget(temp_groupbox)
-    
+
+        #Bias --> Chan0 + Chan1 Groupboxes (horizontally oriented)
         chan0_groupbox = QGroupBox("Channel 0")
         chan1_groupbox = QGroupBox("Channel 1")
         hlayout.addWidget(chan0_groupbox)
         hlayout.addWidget(chan1_groupbox)
-        
-        vlayout0 = QVBoxLayout()
-        vlayout1 = QVBoxLayout()
+
+        #Select Device, Set Bias and Sweep Groupboxes (2 per chan)
         chan0_seldev_box = QGroupBox("Select Device")
         chan1_seldev_box = QGroupBox("Select Device")
         chan0_setbox = QGroupBox("Set Bias")
@@ -87,48 +95,70 @@ class IVCURVE_GUI(QMainWindow):
         chan1_setbox = QGroupBox("Set Bias")
         chan1_sweepbox = QGroupBox("Sweep")
 
+        #Initializes two Vertical Layouts for Chan0/1 Grouboxes
+        vlayout0 = QVBoxLayout()
+        vlayout1 = QVBoxLayout()
+
+        #Sets Select Device to GridLayout populated with widgets
         chan0_seldev_box.setLayout(self.add_select_device_grid(0))
         chan1_seldev_box.setLayout(self.add_select_device_grid(1))
+        #Adds Groupboxes to Vertical Layout for Chan0
         vlayout0.addWidget(chan0_seldev_box)
         vlayout0.addWidget(chan0_setbox)
         vlayout0.addWidget(chan0_sweepbox)
+        #Sets Set Bias and Sweep to GridLayouts populated with widgets
         chan0_setbox.setLayout(self.add_bias_grid(0))
         chan0_sweepbox.setLayout(self.add_bias_sweep_grid(0))
-
+        #Adds Grouboxes to Vertical Layout for Chan1
         vlayout1.addWidget(chan1_seldev_box)        
         vlayout1.addWidget(chan1_setbox)
         vlayout1.addWidget(chan1_sweepbox)
+        #Sets Set Bias and Sweep to GridLayouts populated with widgets
         chan1_setbox.setLayout(self.add_bias_grid(1))
         chan1_sweepbox.setLayout(self.add_bias_sweep_grid(1))        
-        
+
+        #Chan0/1 --> Select Device + Set Bias + Sweep (ver. oriented)
         chan0_groupbox.setLayout(vlayout0)
         chan1_groupbox.setLayout(vlayout1)
-        
+        #from before at Line 85:
+        #Bias --> Chan0 + Chan1 (horizontally oriented)
+
+        #Sets Master Groupbox to GUI's central GridLayout 'grid'
         self.grid = QGridLayout()
         self.grid.addWidget(master_groupbox, 0, 0, 5, 1)      
 
+        #Canvas Groupbox
         canvas_groupbox = QGroupBox("IV Curve Plot")
+        #Initializes GUI's PlotCanvas class as 'canvas'
         self.canvas = PlotCanvas(self, width=5, height=4)
+        #Initializes clear button widget 'clearB' for 'canvas'
         clearB = QPushButton('Clear Plot', self)
         clearB.setToolTip('clear plot')
+        #Sets 'clearB' function to canvas.clear()
         clearB.clicked.connect(self.canvas.clear)
+        #Adds both widgets to a Vertical Layout 'vlayout2'
         vlayout2 = QVBoxLayout()
         vlayout2.addWidget(self.canvas)
         vlayout2.addWidget(clearB)
+        #Adds matplotlib toolbar to control 'canvas'
         self.addToolBar(QtCore.Qt.BottomToolBarArea,
                         NavigationToolbar2QT(self.canvas, self))
         #vlayout2.addWidget(self.addToolBar(QtCore.Qt.BottomToolBarArea,
         #                                   NavigationToolbar2QT(self.canvas, self)))
         #vlayout2.addWidget(self.addToolBar(NavigationToolbar2QT(self.canvas, self)))
         canvas_groupbox.setLayout(vlayout2)
-        
+
+        #Sets Canvas Groupbox to GUI's central GridLayout 'grid'
         self.grid.addWidget(canvas_groupbox, 0, 1, 7, 4)
 
+        #Sets 'grid' to the central widget 'wid'
         wid.setLayout(self.grid)        
 
+        #Draw it all!
         self.show()
 
     def add_menu(self, mainMenu):
+        """Adds a menu feature to the main window"""
         fileMenu = mainMenu.addMenu('File')
         editMenu = mainMenu.addMenu('Edit')
         viewMenu = mainMenu.addMenu('View')
@@ -145,54 +175,68 @@ class IVCURVE_GUI(QMainWindow):
         fileMenu.addAction(exitButton)
     
     def add_toolbar(self, toolbar):
+        """Adds a toolbar feature to the main window"""
         exitAct = QAction(QIcon.fromTheme('exit'), 'Exit', self)
         #exitAct.setShortcut('Ctrl+Q')
         exitAct.triggered.connect(self.close)
         toolbar.addAction(exitAct)
 
     def add_temp_monitor_grid(self, channels):
-        grid = QGridLayout()
+        """Takes a dic of lakeshore 'channels' and populates
+        a GridLayout for Temperature Monitor widgets"""
+        grid = QGridLayout() #GridLayout we will return
         bf = QFont("Times", 12, QFont.Bold)
-        self.temp_labels = {}
-        self.temp_widgets = {}
+        self.temp_labels = {} #Dic for Label widgets
+        self.temp_widgets = {} #Dic for Monitor widgets
         i = 0
         for chan in channels:
+            #Create a Label widget for 'chan'
             self.temp_labels[chan] = QLabel()
             self.temp_labels[chan].setText("%s" %chan)
+            #Create a Monitor widget for 'chan'
             self.temp_widgets[chan] = QLabel()
             self.temp_widgets[chan].setText("")
             self.temp_widgets[chan].setFont(bf)
+            #Adds Label widgets to even indices in grid
             grid.addWidget(self.temp_labels[chan], 0, i+1)
+            #Adds Monitor widgets to odd indices in grid
             grid.addWidget(self.temp_widgets[chan], 0, i+2)
             i += 2
+        #Connects Monitor widgets to lakeshore temperature readings
         self.add_temp_monitor_hooks()
         return grid
 
             
     def add_select_device_grid(self, channel):
-        grid = QGridLayout()
+        """Takes a channel number 'channel' and populates
+        a GridLayout for Select Device widgets"""
+        grid = QGridLayout() #GridLayout we will return
         dset = QLabel('Select Device: ')
+        #Create a combobox for listing SIS Device ID's
         self.devsel_cb[channel] = QComboBox()
+        #Make combobox autocomplete search
         self.devsel_cb[channel].setEditable(True)
         lis = []
+        #Gets SIS Device ID from the database and stores them in 'lis'
         for sisd in SISDimensions.select().order_by(SISDimensions.id):
             lis.append("GP# %s: %s %s %s" % (sisd.gelpack.description, sisd.sis2letter, sisd.sisrowcol, sisd.gelpack_label))
+        #Populates the combobox with the list of SIS Device IDs 
         self.devsel_cb[channel].addItems(lis)
         if channel == 0:
             self.devsel_cb[channel].currentIndexChanged.connect(self.dev_selection_change0)
         else:
             self.devsel_cb[channel].currentIndexChanged.connect(self.dev_selection_change1)
+        #Sets Label and Combbox widgets to the GridLayout
         grid.addWidget(dset, 0, 0)
         grid.addWidget(self.devsel_cb[channel], 0, 1)
-        #print self.devsel_cb.keys()
         return grid
 
     def dev_selection_change0(self, i):
-        #print i, self.devsel_cb.currentText()
+        """Special function"""
         self.devices[0] = self.devsel_cb[0].currentText()
         
     def dev_selection_change1(self, i):
-        #print i, self.devsel_cb.currentText()
+        """Special function"""
         self.devices[1] = self.devsel_cb[1].currentText()
         
     def add_bias_grid(self, channel):
@@ -395,40 +439,7 @@ class PlotCanvas(FigureCanvas):
     def save(self):
         self.fig.savefig('test.png')
 
-class AdvComboBox(QComboBox):
-    
-    def __init__(self, parent=None):
-        super(AdvComboBox, self).__init__(parent)
-
-        self.setFocusPolicy(QtCore.Qt.StrongFocus)
-        self.setEditable(True)
-
-        # add a filter model to filter matching items
-        self.pFilterModel = QtGui.QSortFilterProxyModel(self)
-        self.pFilterModel.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
-        self.pFilterModel.setSourceModel(self.model())
-
-        # add a completer, which uses the filter model
-        self.completer = QtGui.QCompleter(self.pFilterModel, self)
-        # always show all (filtered) completions
-        self.completer.setCompletionMode(QtGui.QCompleter.UnfilteredPopupCompletion)
-
-        self.setCompleter(self.completer)
-
-        # connect signals
-
-        def filter(text):
-            print "Edited: ", text, "type: ", type(text)
-            self.pFilterModel.setFilterFixedString(str(text))
-
-        self.lineEdit().textEdited[unicode].connect(filter)
-        self.completer.activated.connect(self.on_completer_activated)
-
-    # on selection of an item from the completer, select the corresponding item from combobox
-    def on_completer_activated(self, text):
-        if text:
-            index = self.findText(str(text))
-            self.setCurrentIndex(index)
+        
 
 if __name__ == '__main__':
 
