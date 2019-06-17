@@ -46,14 +46,36 @@ class SISDimensions(BaseModel):
             (('gelpack', 'sis2letter', 'sisrowcol', 'gelpack_label'), True),
             )
         
+
+class IVCurveFile(BaseModel):
+    sis = ForeignKeyField(SISDimensions)
+    filename = CharField()
+    measured_time = DateTimeField()
+    create_time = DateTimeField(default=datetime.datetime.now)    
+
+class Temperature(BaseModel):
+    temp1 = FloatField(null=True)
+    temp2 = FloatField(null=True)
+    temp3 = FloatField(null=True)
+    temp4 = FloatField(null=True)
+    temp5 = FloatField(null=True)
+    temp6 = FloatField(null=True)
+    temp7 = FloatField(null=True)
+    temp8 = FloatField(null=True)
+    create_time = DateTimeField(default=datetime.datetime.now)        
+    
 def create_tables():
     db.create_tables([GelPack,
                       SISDimensions,
+                      IVCurveFile,
+                      Temperature,
                       ])
 
 def drop_tables():
     db.drop_tables([GelPack,
                     SISDimensions,
+                    IVCurveFile,
+                    Temperature
                     ])
 
 
