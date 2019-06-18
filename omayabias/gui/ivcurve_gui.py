@@ -56,7 +56,7 @@ class IVCURVE_GUI(QMainWindow):
         #Set title for GUI window
         self.setWindowTitle('OMAYA Bias GUI')
 
-        #Initializes widget 'wid' that layouts will lock to
+        #Initializes main widget 'wid' that Master and Canvas Groupboxes will lock to
         wid = QWidget(self)
         self.setCentralWidget(wid)
 
@@ -151,6 +151,8 @@ class IVCURVE_GUI(QMainWindow):
         #Sets Canvas Groupbox to GUI's central GridLayout 'grid'
         self.grid.addWidget(canvas_groupbox, 0, 1, 7, 4)
 
+        #Now wid --> Master Groupbox + Canvas Groupbox
+
         #Sets 'grid' to the central widget 'wid'
         wid.setLayout(self.grid)        
 
@@ -214,7 +216,7 @@ class IVCURVE_GUI(QMainWindow):
         dset = QLabel('Select Device: ')
         #Create a combobox for listing SIS Device ID's
         self.devsel_cb[channel] = QComboBox()
-        #Make combobox autocomplete search
+        #Makes combobox autocomplete 
         self.devsel_cb[channel].setEditable(True)
         lis = []
         #Gets SIS Device ID from the database and stores them in 'lis'
@@ -232,14 +234,15 @@ class IVCURVE_GUI(QMainWindow):
         return grid
 
     def dev_selection_change0(self, i):
-        """Special function"""
+        """Reads SIS Device ID for channel 0"""
         self.devices[0] = self.devsel_cb[0].currentText()
         
     def dev_selection_change1(self, i):
-        """Special function"""
+        """Reads SIS Device ID for channel 1"""
         self.devices[1] = self.devsel_cb[1].currentText()
         
     def add_bias_grid(self, channel):
+        """Takes a channel number 'channel' and populates a GridLayout of Bias widgets"""
         grid = QGridLayout()
         vset = QLabel('Vj (mV)')
         self.bias_widgets['Vj%d' % channel] = QLineEdit()
@@ -274,6 +277,7 @@ class IVCURVE_GUI(QMainWindow):
         return grid
 
     def Vjset(self, channel):
+        """Sets the junction voltage from the stored widget value"""
         try:
             Vj = float(self.bias_widgets['Vj%d' % channel].text()) * 1e-3
         except ValueError:
@@ -281,6 +285,7 @@ class IVCURVE_GUI(QMainWindow):
         self.sisbias.xicor[channel].set_mixer_voltage(Vj)
             
     def pcastate(self, btn):
+        """PCA state function: sets CV or CR"""
         txt = btn.text()
         print txt
         #pca_state = int(txt[3])
@@ -292,22 +297,26 @@ class IVCURVE_GUI(QMainWindow):
                 self.sisbias.pca.SetMode(1)
             
     def add_bias_monitor_hooks(self):
+        """Sets timer for updating the bias values labels"""
         self.bias_timer = QTimer()
         self.bias_timer.timeout.connect(self.update_bias_labels)
         self.bias_timer.start(3000)
     
     def update_bias_labels(self):
+        """Reads Vsense and Isense and updates the correct label widgets"""
         for channel in (0, 1):
             Vs, Is = self.sisbias.adc.read_Vsense(channel), self.sisbias.adc.read_Isense(channel)
             self.bias_widgets['IsLabel%d' % channel].setText("%.2f" % (Is/1e-6))
             self.bias_widgets['VsLabel%d' % channel].setText("%.2f" % (Vs/1e-3))
 
     def add_temp_monitor_hooks(self):
+        """Sets timer for updating the Temp Monitor widgets"""
         self.temp_timer = QTimer()
         self.temp_timer.timeout.connect(self.update_temp_widgets)
         self.temp_timer.start(3000)
 
     def update_temp_widgets(self):
+        """Uses the lakeshore temperature read to update the Temp Monitor widgets"""
         T = self.lk.read_temperature(0)
         tdic = {}
         for chan in range(1, 9):
@@ -321,6 +330,7 @@ class IVCURVE_GUI(QMainWindow):
             i += 1
             
     def add_bias_sweep_grid(self, channel):
+        """Takes the channel number 'channel' and populates a GridLayout of Sweep widgets"""
         grid = QGridLayout()
         vminL = QLabel('Vmin (mV)')
         vmaxL = QLabel('Vmax (mV)')
@@ -336,8 +346,7 @@ class IVCURVE_GUI(QMainWindow):
         self.bias_widgets['savebtn%d' % channel].clicked.connect(lambda:self.save_sweep(self.bias_widgets['savebtn%d' % channel]))
         self.bias_widgets['plotbtn%d' % channel] = QPushButton('Plot IV Curve')
         self.bias_widgets['plotbtn%d' % channel].setToolTip('Plot IV Curve')
-        self.bias_widgets['plotbtn%d' % channel].clicked.connect(lambda:self.plot_ivcurve(channel))
-        
+        self.bias_widgets['plotbtn%d' % channel].clicked.connect(lambda:self.plot_ivcurve(channel)) 
         grid.addWidget(vminL, 0, 0)
         grid.addWidget(self.bias_widgets['Vmin%d' % channel],  0, 1)
         grid.addWidget(vmaxL, 1, 0)
@@ -357,6 +366,7 @@ class IVCURVE_GUI(QMainWindow):
         self.move(qr.topLeft())
 
     def sweep(self, btn):
+        """Performs a sweep of voltages and measures current"""
         txt = btn.text()
         channel = int(txt.split('Sweep Channel ')[1])
         print "Sweeping Channel: %d" % channel
@@ -386,12 +396,12 @@ class IVCURVE_GUI(QMainWindow):
             dic['Is'] = Is
             print v, Vs, Is
             lisdic.append(dic)
-        self.sweep_data[channel] = pd.DataFrame(lisdic)
-        #self.sweep_data[channel].to_csv('channel%d.csv' % channel)
+        self.sweep_data[channel] = pd.DataFrame(lisdic) #saves df into sweep_data
         self.sweep_time[channel] = datetime.datetime.now().ctime()
         self.bias_timer.start(3000)
         
     def save_sweep(self, btn):
+        """Saves 'self.sweep_data' into a csv file"""
         txt = btn.text()
         channel = int(txt.split('Save Channel ')[1])
         print "Saving Channel: %d" % channel
@@ -410,27 +420,21 @@ class IVCURVE_GUI(QMainWindow):
         self.canvas.plot(self.sweep_data[channel], channel, clear=False)
         
 class PlotCanvas(FigureCanvas):
+    """Class for functions related to matplotlib plot"""
 
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         """Initializes matplotlib figure"""
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = self.fig.add_subplot(111)
-
+        
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
         FigureCanvas.setSizePolicy(self, QSizePolicy.Expanding,
                                    QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
-        #self.plot_test()
-
-    def plot_test(self):
-        data = [random.random() for i in range(25)]
-        self.axes.plot(data, 'r-')
-        
-        self.axes.set_title('SIS Channel 0')
-        self.draw()
 
     def plot(self, df, channel=0, clear=True):
+        """plot data onto axes"""
         if clear:
             self.clear()
         self.axes.plot(df.Vj/1e-3, df.Is/1e-6, 'o-', label='Channel %d' % channel)
@@ -439,14 +443,16 @@ class PlotCanvas(FigureCanvas):
         self.draw()
         
     def clear(self):
+        """clear axes"""
         self.axes.cla()
         self.draw()
         
     def save(self):
+        """save figure to file"""
         self.fig.savefig('test.png')
 
         
-
+# MAIN PROGRAM
 if __name__ == '__main__':
 
     app = QApplication(sys.argv)
