@@ -16,6 +16,7 @@ from omayabias.lakeshore.myGpib import Gpib
 import numpy
 import time
 import pandas as pd
+from omayabias.utils import norm_state_resistance
 
 logger.name = __name__
 QIcon.setThemeSearchPaths(['/usr/share/icons'])
@@ -35,7 +36,7 @@ class IVCURVE_GUI(QMainWindow):
         self.sweep_time = [None, None]
         self.skiprows = 2 #size of header for database file
         self.initUI() #this function initializes the widgets and layouts
-        
+       
     def initUI(self):
         """Initializes widgets and layout for the IVCURVE_GUI window"""
 
@@ -136,10 +137,17 @@ class IVCURVE_GUI(QMainWindow):
         clearB.setToolTip('clear plot')
         #Sets 'clearB' function to canvas.clear()
         clearB.clicked.connect(self.canvas.clear)
+        #Initializes fit button widget 'fitB'
+        fitB = QPushButton('Fit Curve',self)
+    
+        fitB.setToolTip('Finds normal state resistance of IV curve')
+        fitB.clicked.connect(self.fit_wrapper)
+        #fitB.clicked.connect(fit)
         #Adds both widgets to a Vertical Layout 'vlayout2'
         vlayout2 = QVBoxLayout()
         vlayout2.addWidget(self.canvas)
         vlayout2.addWidget(clearB)
+        vlayout2.addWidget(fitB)
         #Adds matplotlib toolbar to control 'canvas'
         self.addToolBar(QtCore.Qt.BottomToolBarArea,
                         NavigationToolbar2QT(self.canvas, self))
@@ -337,6 +345,10 @@ class IVCURVE_GUI(QMainWindow):
         self.bias_widgets['plotbtn%d' % channel] = QPushButton('Plot IV Curve')
         self.bias_widgets['plotbtn%d' % channel].setToolTip('Plot IV Curve')
         self.bias_widgets['plotbtn%d' % channel].clicked.connect(lambda:self.plot_ivcurve(channel))
+
+        self.bias_widgets['plotbtn%d' % channel] = QPushButton('Get Resistance')
+        self.bias_widgets['plotbtn%d' % channel].setToolTip('Calculate slope, intercept, and resistance from sweep data and print to terminal')
+        self.bias_widgets['plotbtn%d' % channel].clicked.connect(lambda:self.fit_wrapper(channel))
         
         grid.addWidget(vminL, 0, 0)
         grid.addWidget(self.bias_widgets['Vmin%d' % channel],  0, 1)
@@ -390,7 +402,15 @@ class IVCURVE_GUI(QMainWindow):
         #self.sweep_data[channel].to_csv('channel%d.csv' % channel)
         self.sweep_time[channel] = datetime.datetime.now().ctime()
         self.bias_timer.start(3000)
-        
+
+    def fit_wrapper(self,channel):
+       try:
+            df = pd.DataFrame({'Is':self.sweep_data[channel]['Is'],'Vs':self.sweep_data[channel]['Vs']})
+            reults = norm_state_resistance.norm_state_res(df)
+            print(results)
+       except KeyError:
+            print('ERROR:need sweep data')
+            
     def save_sweep(self, btn):
         txt = btn.text()
         channel = int(txt.split('Save Channel ')[1])
