@@ -451,7 +451,7 @@ class PlotCanvas(FigureCanvas):
         """save figure to file"""
         self.fig.savefig('test.png')
 
-        
+# NEW        
 # MAIN PROGRAM
 if __name__ == '__main__':
 
