@@ -82,6 +82,16 @@ class IVCURVE_GUI(QMainWindow):
         vlayout.addWidget(bias_groupbox)
         vlayout.addWidget(temp_groupbox)
 
+        #PCA Groupbox
+        pca_groupbox = QGroupBox("PCA")
+        pca_groupbox.setLayout(self.add_pca_grid())
+        vlayout.addWidget(pca_groupbox)
+        #pca_groupbox = QGroupBox('PCA')
+        #pca_groupbox.setLayout(vlayout)
+        #vlayout.addWidget(pca_groupbox)
+        #grid = QGridLayout()
+        #cvB = QPushButton("CV",self)
+        #crB = QPushButton("CR",self)
         #Bias --> Chan0 + Chan1 Groupboxes (horizontally oriented)
         chan0_groupbox = QGroupBox("Channel 0")
         chan1_groupbox = QGroupBox("Channel 1")
@@ -137,17 +147,11 @@ class IVCURVE_GUI(QMainWindow):
         clearB.setToolTip('clear plot')
         #Sets 'clearB' function to canvas.clear()
         clearB.clicked.connect(self.canvas.clear)
-        #Initializes fit button widget 'fitB'
-        fitB = QPushButton('Fit Curve',self)
-    
-        fitB.setToolTip('Finds normal state resistance of IV curve')
-        fitB.clicked.connect(self.fit_wrapper)
-        #fitB.clicked.connect(fit)
+
         #Adds both widgets to a Vertical Layout 'vlayout2'
         vlayout2 = QVBoxLayout()
         vlayout2.addWidget(self.canvas)
         vlayout2.addWidget(clearB)
-        vlayout2.addWidget(fitB)
         #Adds matplotlib toolbar to control 'canvas'
         self.addToolBar(QtCore.Qt.BottomToolBarArea,
                         NavigationToolbar2QT(self.canvas, self))
@@ -216,7 +220,14 @@ class IVCURVE_GUI(QMainWindow):
         self.add_temp_monitor_hooks()
         return grid
 
-            
+    def add_pca_grid(self):
+        grid = QGridLayout()
+        cvB=QPushButton("CV",self)
+        crB = QPushButton("CR",self)
+        grid.addWidget(cvB,0,0)
+        grid.addWidget(crB,0,1)
+        return grid
+        
     def add_select_device_grid(self, channel):
         """Takes a channel number 'channel' and populates
         a GridLayout for Select Device widgets"""
@@ -292,17 +303,22 @@ class IVCURVE_GUI(QMainWindow):
             Vj = 0.0 * 1e-3
         self.sisbias.xicor[channel].set_mixer_voltage(Vj)
             
-    def pcastate(self, btn):
-        """PCA state function: sets CV or CR"""
-        txt = btn.text()
-        print txt
+   # def pcastate(self, btn):
+       # """PCA state function: sets CV or CR"""
+       # txt = btn.text()
+       # print txt
         #pca_state = int(txt[3])
         #channel = int(txt[4])
-        if btn.isChecked():
-            if txt == "Constant V":
-                self.sisbias.pca.SetMode(0)
-            else:
-                self.sisbias.pca.SetMode(1)
+       # if btn.isChecked():
+           # if txt == "Constant V":
+               # self.sisbias.pca.SetMode(0)
+           # else:
+               # self.sisbias.pca.SetMode(1)
+    def pca_state(self, state):
+        if state == 0:
+            self.sisbias.pca.setMode(0)
+        else:
+            self.sisbias.pca.setMode(1)
             
     def add_bias_monitor_hooks(self):
         """Sets timer for updating the bias values labels"""
@@ -355,10 +371,9 @@ class IVCURVE_GUI(QMainWindow):
         self.bias_widgets['plotbtn%d' % channel] = QPushButton('Plot IV Curve')
         self.bias_widgets['plotbtn%d' % channel].setToolTip('Plot IV Curve')
         self.bias_widgets['plotbtn%d' % channel].clicked.connect(lambda:self.plot_ivcurve(channel))
-
-        self.bias_widgets['plotbtn%d' % channel] = QPushButton('Get Resistance')
-        self.bias_widgets['plotbtn%d' % channel].setToolTip('Calculate slope, intercept, and resistance from sweep data and print to terminal')
-        self.bias_widgets['plotbtn%d' % channel].clicked.connect(lambda:self.fit_wrapper(channel))
+        self.bias_widgets['resbtn%d' % channel] = QPushButton('Get Resistance')
+        self.bias_widgets['resbtn%d' % channel].setToolTip('Calculate slope, intercept, and resistance from sweep data and print to terminal')
+        self.bias_widgets['resbtn%d' % channel].clicked.connect(lambda:self.fit_wrapper(channel))
        
         grid.addWidget(vminL, 0, 0)
         grid.addWidget(self.bias_widgets['Vmin%d' % channel],  0, 1)
@@ -369,6 +384,7 @@ class IVCURVE_GUI(QMainWindow):
         grid.addWidget(self.bias_widgets['sweepbtn%d' % channel], 3, 0, 1, 2)
         grid.addWidget(self.bias_widgets['savebtn%d' % channel], 4, 0, 1, 2)
         grid.addWidget(self.bias_widgets['plotbtn%d' % channel], 5, 0, 1, 2)
+        grid.addWidget(self.bias_widgets['resbtn%d' % channel], 6, 0, 1, 2)
         return grid
         
     def center(self):
@@ -415,8 +431,9 @@ class IVCURVE_GUI(QMainWindow):
 
     def fit_wrapper(self,channel):
        try:
-            df = pd.DataFrame({'Is':self.sweep_data[channel]['Is'],'Vs':self.sweep_data[channel]['Vs']})
-            reults = norm_state_resistance.norm_state_res(df)
+            df = pd.DataFrame({'Vs':self.sweep_data[channel]['Vs'],'Is':self.sweep_data[channel]['Is']})
+            results = norm_state_resistance.norm_state_res(df)
+            print(df)
             print(results)
        except KeyError:
             print('ERROR:need sweep data')
