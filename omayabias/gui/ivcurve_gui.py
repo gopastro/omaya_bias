@@ -434,7 +434,15 @@ class IVCURVE_GUI(QMainWindow):
             df = pd.DataFrame({'Vs':self.sweep_data[channel]['Vs'],'Is':self.sweep_data[channel]['Is']})
             results = norm_state_resistance.norm_state_res(df)
             print(df)
-            print(results)
+            print(results[0][0])
+            subset_pos = df[df.Vs >= 0.015]
+            x_pos=numpy.array(subset_pos['Vs'])
+            y_pos = numpy.array(subset_pos['Is'])
+            fit_pos,err_pos = numpy.polyfit(x_pos,y_pos,1,cov=True)
+
+            resistance = 1/fit_pos
+            print(resistance)
+            
        except KeyError:
             print('ERROR:need sweep data')
             
