@@ -14,7 +14,7 @@ def norm_state_res(data_array, voltage):
     subset_pos = data_array[data_array.Vs >=voltage]
     x_pos=np.array(subset_pos['Vs'])
     y_pos=np.array(subset_pos['Is'])
-    fit_pos, err_pos=np.polyfit(x_neg, y_neg, 1, cov=True)
+    fit_pos, err_pos=np.polyfit(x_pos, y_pos, 1, cov=True)
             
     #Negative subset voltages <= -0.015 V
 
@@ -32,3 +32,6 @@ def norm_state_res(data_array, voltage):
     #print(avg_slope_err,avg_int_err,resistance, resistance_err)
     return [[resistance, resistance_err],[avg_slope,avg_slope_err],[avg_int, avg_int_err]]
     #return fit_pos,err_pos
+
+
+    
