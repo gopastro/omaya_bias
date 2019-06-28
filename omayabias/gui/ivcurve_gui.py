@@ -348,10 +348,10 @@ class IVCURVE_GUI(QMainWindow):
                 tdic['temp%d' % chan] = T[chan]
         temperature = Temperature(**tdic)
         temperature.save()
-        i = 1
+        #i = 1
         for chan in self.temp_widgets.keys():
-            self.temp_widgets[chan].setText("%.2f" % (T[i]))
-            i += 1
+            self.temp_widgets[chan].setText("%.2f" % (T[chan]))
+            #i += 1
             
     def add_bias_sweep_grid(self, channel):
         """Takes the channel number 'channel' and populates a GridLayout of Sweep widgets"""
