@@ -345,7 +345,7 @@ class IVCURVE_GUI(QMainWindow):
         tdic = {}
         for chan in range(1, 9):
             if chan not in (4, 8):
-                tdic['temp%d' % chan] = T[chan]
+                tdic['temp%d' % chan] = T[int(chan)]
         temperature = Temperature(**tdic)
         temperature.save()
         #i = 1
