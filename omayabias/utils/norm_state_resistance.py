@@ -11,14 +11,16 @@ def norm_state_res(data_array, vmin, vmax):
            average slope, average slope error
            average y-intercept, average y-intercept error
     ''' 
-    subset_pos = data_array[vmin <= data_array.Vs <= vmax ]
+    #print(data_array)
+    pre_pos = data_array[data_array.Vs <= vmax ]
+    subset_pos = pre_pos[vmin <= pre_pos.Vs]
     x_pos=np.array(subset_pos['Vs'])
     y_pos=np.array(subset_pos['Is'])
     fit_pos, err_pos=np.polyfit(x_pos, y_pos, 1, cov=True)
             
     #Negative subset voltages <= -0.015 V
-
-    subset_neg = data_array[-vmax <= data_array.Vs <= -vmin]
+    pre_neg = data_array[data_array.Vs >= -vmax]
+    subset_neg = pre_neg[pre_neg.Vs <= -vmin]
     x_neg = np.array(subset_neg['Vs'])
     y_neg = np.array(subset_neg['Is'])
     fit_neg,err_neg=np.polyfit(x_neg,y_neg,1,cov=True)
