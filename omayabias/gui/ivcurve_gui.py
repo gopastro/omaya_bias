@@ -83,9 +83,10 @@ class IVCURVE_GUI(QMainWindow):
         vlayout.addWidget(temp_groupbox)
 
         #PCA Groupbox
-        pca_groupbox = QGroupBox("PCA")
-        pca_groupbox.setLayout(self.add_pca_grid())
-        vlayout.addWidget(pca_groupbox)
+        #pca_groupbox = QGroupBox("PCA")
+        #pca_groupbox.setLayout(self.add_pca_grid())
+        #vlayout.addWidget(pca_groupbox)
+                     
         #pca_groupbox = QGroupBox('PCA')
         #pca_groupbox.setLayout(vlayout)
         #vlayout.addWidget(pca_groupbox)
@@ -103,9 +104,11 @@ class IVCURVE_GUI(QMainWindow):
         chan1_seldev_box = QGroupBox("Select Device")
         chan0_setbox = QGroupBox("Set Bias")
         chan0_sweepbox = QGroupBox("Sweep")
+        chan0_resbox = QGroupBox("Resistance")
         chan1_setbox = QGroupBox("Set Bias")
         chan1_sweepbox = QGroupBox("Sweep")
-
+        chan1_resbox = QGroupBox("Resistance")
+        
         #Initializes two Vertical Layouts for Chan0/1 Grouboxes
         vlayout0 = QVBoxLayout()
         vlayout1 = QVBoxLayout()
@@ -113,10 +116,14 @@ class IVCURVE_GUI(QMainWindow):
         #Sets Select Device to GridLayout populated with widgets
         chan0_seldev_box.setLayout(self.add_select_device_grid(0))
         chan1_seldev_box.setLayout(self.add_select_device_grid(1))
+
+        chan0_resbox.setLayout(self.add_res_grid(0))
+        chan1_resbox.setLayout(self.add_res_grid(1))
         #Adds Groupboxes to Vertical Layout for Chan0
         vlayout0.addWidget(chan0_seldev_box)
         vlayout0.addWidget(chan0_setbox)
         vlayout0.addWidget(chan0_sweepbox)
+        vlayout0.addWidget(chan0_resbox)
         #Sets Set Bias and Sweep to GridLayouts populated with widgets
         chan0_setbox.setLayout(self.add_bias_grid(0))
         chan0_sweepbox.setLayout(self.add_bias_sweep_grid(0))
@@ -124,6 +131,7 @@ class IVCURVE_GUI(QMainWindow):
         vlayout1.addWidget(chan1_seldev_box)        
         vlayout1.addWidget(chan1_setbox)
         vlayout1.addWidget(chan1_sweepbox)
+        vlayout1.addWidget(chan1_resbox)
         #Sets Set Bias and Sweep to GridLayouts populated with widgets
         chan1_setbox.setLayout(self.add_bias_grid(1))
         chan1_sweepbox.setLayout(self.add_bias_sweep_grid(1))        
@@ -131,6 +139,7 @@ class IVCURVE_GUI(QMainWindow):
         #Chan0/1 --> Select Device + Set Bias + Sweep (ver. oriented)
         chan0_groupbox.setLayout(vlayout0)
         chan1_groupbox.setLayout(vlayout1)
+        
         #from before at Line 85:
         #Bias --> Chan0 + Chan1 (horizontally oriented)
 
@@ -226,7 +235,7 @@ class IVCURVE_GUI(QMainWindow):
         crB = QPushButton("CR",self)
         grid.addWidget(cvB,0,0)
         grid.addWidget(crB,0,1)
-        return grid
+        return grid        
         
     def add_select_device_grid(self, channel):
         """Takes a channel number 'channel' and populates
@@ -371,10 +380,11 @@ class IVCURVE_GUI(QMainWindow):
         self.bias_widgets['plotbtn%d' % channel] = QPushButton('Plot IV Curve')
         self.bias_widgets['plotbtn%d' % channel].setToolTip('Plot IV Curve')
         self.bias_widgets['plotbtn%d' % channel].clicked.connect(lambda:self.plot_ivcurve(channel))
-        self.bias_widgets['resbtn%d' % channel] = QPushButton('Get Resistance')
-        self.bias_widgets['resbtn%d' % channel].setToolTip('Calculate slope, intercept, and resistance from sweep data and print to terminal')
-        self.bias_widgets['resbtn%d' % channel].clicked.connect(lambda:self.fit_wrapper(channel))
-       
+
+#        self.bias_widgets['resbtn%d' % channel] = QPushButton('Get Resistance')
+#        self.bias_widgets['resbtn%d' % channel].setToolTip('Calculate slope, intercept, and resistance from sweep data and print to terminal')
+#        self.bias_widgets['resbtn%d' % channel].clicked.connect(lambda:self.fit_wrapper(channel,0.015,0.030))
+        
         grid.addWidget(vminL, 0, 0)
         grid.addWidget(self.bias_widgets['Vmin%d' % channel],  0, 1)
         grid.addWidget(vmaxL, 1, 0)
@@ -384,7 +394,7 @@ class IVCURVE_GUI(QMainWindow):
         grid.addWidget(self.bias_widgets['sweepbtn%d' % channel], 3, 0, 1, 2)
         grid.addWidget(self.bias_widgets['savebtn%d' % channel], 4, 0, 1, 2)
         grid.addWidget(self.bias_widgets['plotbtn%d' % channel], 5, 0, 1, 2)
-        grid.addWidget(self.bias_widgets['resbtn%d' % channel], 6, 0, 1, 2)
+#        grid.addWidget(self.bias_widgets['resbtn%d' % channel], 6, 0, 1, 2)
         return grid
         
     def center(self):
@@ -429,22 +439,42 @@ class IVCURVE_GUI(QMainWindow):
         self.sweep_time[channel] = datetime.datetime.now().ctime()
         self.bias_timer.start(3000)
 
-    def fit_wrapper(self,channel):
-       try:
+    def add_res_grid(self,channel):
+        grid = QGridLayout()
+        vminL = QLabel('Vmin (mV)')
+        vmaxL = QLabel('Vmax (mV)')
+        self.bias_widgets['Vmin%d' % channel]=QLineEdit()
+        self.bias_widgets['Vmax%d' % channel]=QLineEdit()
+        self.bias_widgets['resbtn%d' % channel]=QPushButton("Get Resistance")
+        self.bias_widgets['resbtn%d' % channel].setToolTip('Calculates resistance of junction')
+        self.bias_widgets['resbtn%d' % channel].clicked.connect(lambda:self.fit_wrapper(channel,0.015,0.020))
+        grid.addWidget(vminL,0,0)
+        grid.addWidget(vmaxL,1,0)
+        grid.addWidget(self.bias_widgets['Vmin%d' % channel],0,1)
+        grid.addWidget(self.bias_widgets['Vmax%d' % channel],1,1)
+        grid.addWidget(self.bias_widgets['resbtn%d' % channel],2,0,1,2)
+        return grid                                                                
+                                                                
+    def fit_wrapper(self,channel,vmin,vmax):
+        try:
+           vmin_res = float(self.bias_widgets['Vmax%d' % channel].text())
+           vmax_res = float(self.bias_widgets['Vmin%d' % channel].text())
+        except ValueError:
+           vmin_res = 0.015
+           vmax_res = 0.020
+        try:
+            vmin_res,vmax_res = vmin_res * 1e-3, vmax_res * 1e-3
+            #print(vmin_res,vmax_res)
             df = pd.DataFrame({'Vs':self.sweep_data[channel]['Vs'],'Is':self.sweep_data[channel]['Is']})
-            results = norm_state_resistance.norm_state_res(df)
-            print(df)
-            print(results[0][0])
-            subset_pos = df[df.Vs >= 0.015]
-            x_pos=numpy.array(subset_pos['Vs'])
-            y_pos = numpy.array(subset_pos['Is'])
-            fit_pos,err_pos = numpy.polyfit(x_pos,y_pos,1,cov=True)
-
-            resistance = 1/fit_pos
-            print(resistance)
-            
-       except KeyError:
+            results = norm_state_resistance.norm_state_res(df,vmin,vmax)           
+            print("{0:<11} : {1:3.3f} +- {2:3.3e}".format("Resistance",results[0][0],results[2][1]))
+            print("{0:<11} : {1:3.3e} +- {2:3.3e}".format("y-intercept",results[1][0],results[1][1]))
+            print("{0:<11} : {1:3.3e} +- {2:3.3e}".format("IV Slope",results[2][0],results[2][1]))
+        except KeyError:
             print('ERROR:need sweep data')
+
+        except ValueError:
+            print('ERROR:sweep at finer resolution')
             
     def save_sweep(self, btn):
         """Saves 'self.sweep_data' into a csv file"""
