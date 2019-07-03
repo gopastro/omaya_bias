@@ -441,8 +441,8 @@ class IVCURVE_GUI(QMainWindow):
 
     def add_res_grid(self,channel):
         grid = QGridLayout()
-        vminL = QLabel('Vmin (mV)')
-        vmaxL = QLabel('Vmax (mV)')
+        vminL = QLabel('Vmin range (mV)')
+        vmaxL = QLabel('Vmax range (mV)')
         self.bias_widgets['Vmin%d' % channel]=QLineEdit()
         self.bias_widgets['Vmax%d' % channel]=QLineEdit()
         self.bias_widgets['resbtn%d' % channel]=QPushButton("Get Resistance")
