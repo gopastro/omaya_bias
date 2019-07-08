@@ -78,21 +78,15 @@ class IVCURVE_GUI(QMainWindow):
         #Temp Monitor Groupbox is then set to this grid
         temp_groupbox.setLayout(self.add_temp_monitor_grid(channels))
 
-        #Master --> Bias + Temp Monitor (vertically oriented)
+        #PCA Groupbox                                                                                                            
+        pca_groupbox = QGroupBox("PCA")                                                                                           
+        pca_groupbox.setLayout(self.add_pca_grid())
+        
+        #Master --> PCA + Bias + Temp Monitor (vertically oriented)
+        vlayout.addWidget(pca_groupbox)
         vlayout.addWidget(bias_groupbox)
         vlayout.addWidget(temp_groupbox)
-
-        #PCA Groupbox
-        #pca_groupbox = QGroupBox("PCA")
-        #pca_groupbox.setLayout(self.add_pca_grid())
-        #vlayout.addWidget(pca_groupbox)
                      
-        #pca_groupbox = QGroupBox('PCA')
-        #pca_groupbox.setLayout(vlayout)
-        #vlayout.addWidget(pca_groupbox)
-        #grid = QGridLayout()
-        #cvB = QPushButton("CV",self)
-        #crB = QPushButton("CR",self)
         #Bias --> Chan0 + Chan1 Groupboxes (horizontally oriented)
         chan0_groupbox = QGroupBox("Channel 0")
         chan1_groupbox = QGroupBox("Channel 1")
@@ -231,8 +225,11 @@ class IVCURVE_GUI(QMainWindow):
 
     def add_pca_grid(self):
         grid = QGridLayout()
-        cvB=QPushButton("CV",self)
-        crB = QPushButton("CR",self)
+        cvB = QRadioButton("Constant V")                                                         
+        crB = QRadioButton("Constant R")
+        cvB.toggled.connect(self.pca_state0)
+        crB.toggled.connect(self.pca_state1)
+        cvB.setChecked(True)
         grid.addWidget(cvB,0,0)
         grid.addWidget(crB,0,1)
         return grid        
@@ -276,16 +273,16 @@ class IVCURVE_GUI(QMainWindow):
         self.bias_widgets['Vj%d' % channel] = QLineEdit()
         self.bias_widgets['Vj%d' % channel].returnPressed.connect(lambda:self.Vjset(channel))
         pcalab = QLabel('Bias Mode:')
-        self.bias_widgets['PCA0%d' % channel] = QRadioButton("Constant V")
-        self.bias_widgets['PCA1%d' % channel] = QRadioButton("Constant R")
-        self.bias_widgets['PCA0%d' % channel].setChecked(True)
-        self.bias_widgets['PCA0%d' % channel].toggled.connect(lambda:self.pcastate(self.bias_widgets['PCA0%d' % channel]))
-        self.bias_widgets['PCA1%d' % channel].toggled.connect(lambda:self.pcastate(self.bias_widgets['PCA1%d' % channel]))
-        wid = QWidget()
-        hlayout = QHBoxLayout()
-        hlayout.addWidget(self.bias_widgets['PCA0%d' % channel])
-        hlayout.addWidget(self.bias_widgets['PCA1%d' % channel])
-        wid.setLayout(hlayout)
+        #self.bias_widgets['PCA0%d' % channel] = QRadioButton("Constant V")
+        #self.bias_widgets['PCA1%d' % channel] = QRadioButton("Constant R")
+        #self.bias_widgets['PCA0%d' % channel].setChecked(True)
+        #self.bias_widgets['PCA0%d' % channel].toggled.connect(lambda:self.pcastate(self.bias_widgets['PCA0%d' % channel]))
+        #self.bias_widgets['PCA1%d' % channel].toggled.connect(lambda:self.pcastate(self.bias_widgets['PCA1%d' % channel]))
+        #wid = QWidget()
+        #hlayout = QHBoxLayout()
+        #hlayout.addWidget(self.bias_widgets['PCA0%d' % channel])
+        #hlayout.addWidget(self.bias_widgets['PCA1%d' % channel])
+        #wid.setLayout(hlayout)
         Islab = QLabel('Is (uA):')
         Vslab = QLabel('Vs (mV):')
         self.bias_widgets['IsLabel%d' % channel] = QLabel('Is (uA)')
@@ -296,8 +293,8 @@ class IVCURVE_GUI(QMainWindow):
         self.add_bias_monitor_hooks()
         grid.addWidget(vset, 0, 0, 1, 2)
         grid.addWidget(self.bias_widgets['Vj%d' % channel],  0, 2, 1, 2)
-        grid.addWidget(pcalab, 1, 0, 1, 2)
-        grid.addWidget(wid, 1, 2, 1, 2)
+        #grid.addWidget(pcalab, 1, 0, 1, 2)
+        #grid.addWidget(wid, 1, 2, 1, 2)
         grid.addWidget(Islab, 2, 0)
         grid.addWidget(self.bias_widgets['IsLabel%d' % channel], 2, 1)
         grid.addWidget(Vslab, 2, 2)
@@ -323,11 +320,12 @@ class IVCURVE_GUI(QMainWindow):
                # self.sisbias.pca.SetMode(0)
            # else:
                # self.sisbias.pca.SetMode(1)
-    def pca_state(self, state):
-        if state == 0:
-            self.sisbias.pca.setMode(0)
-        else:
-            self.sisbias.pca.setMode(1)
+            
+    def pca_state0(self):
+        self.sisbias.pca.SetMode(0)
+
+    def pca_state1(self):
+        self.sisbias.pca.SetMode(1)
             
     def add_bias_monitor_hooks(self):
         """Sets timer for updating the bias values labels"""
