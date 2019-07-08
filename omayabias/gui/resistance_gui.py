@@ -35,8 +35,9 @@ class IVCURVE_GUI(QMainWindow):
         self.devices = [None, None]
         self.sweep_time = [None, None]
         self.skiprows = 2 #size of header for database file
+        self.filename = ""
         self.initUI() #this function initializes the widgets and layouts
-       
+
     def initUI(self):
         """Initializes widgets and layout for the IVCURVE_GUI window"""
 
@@ -55,7 +56,7 @@ class IVCURVE_GUI(QMainWindow):
         self.add_toolbar(self.toolbar)
 
         #Set title for GUI window
-        self.setWindowTitle('OMAYA Bias GUI')
+        self.setWindowTitle('OMAYA RESISTANCE GUI')
 
         #Initializes main widget 'wid' that Master and Canvas Groupboxes will lock to
         wid = QWidget(self)
@@ -76,8 +77,8 @@ class IVCURVE_GUI(QMainWindow):
         vlayout.addWidget(openB)
         vlayout.addWidget(res_groupbox)
 
-        fileLabel=QLabel("No file selected")
-        vlayout.addWidget(fileLabel)
+        self.fileLabel=QLabel("No file selected")
+        vlayout.addWidget(self.fileLabel)
         #Sets Master Groupbox to GUI's central GridLayout 'grid'
         self.grid = QGridLayout()
         self.grid.addWidget(master_groupbox, 0, 0, 5, 1)      
@@ -125,7 +126,7 @@ class IVCURVE_GUI(QMainWindow):
             data=pd.read_csv(fileName,skiprows=3)
             print(data)
             self.plot_ivcurve(data)
-        return data,fileName
+            self.fileLabel.setText(fileName)
 
 
             
@@ -168,7 +169,7 @@ class IVCURVE_GUI(QMainWindow):
         vmax=QLineEdit()
         resB=QPushButton("Get Resistance")
         resB.setToolTip('Calculates resistance of junction')
-        resB.clicked.connect(self.fit_wrapper(df,0.015,0.020))
+       # resB.clicked.connect(self.fit_wrapper(df,0.015,0.020))
         grid.addWidget(vminL,0,0)
         grid.addWidget(vmaxL,1,0)
         grid.addWidget(vmin,0,1)
@@ -179,25 +180,25 @@ class IVCURVE_GUI(QMainWindow):
     def plot_ivcurve(self,df):
         self.canvas.plot(df, clear=False)
 
-    def fit_wrapper(self,df,vmin,vmax):
-        try:
-           vmin_res = float(self.vmin.text())
-           vmax_res = float(self.vmax.text())
-        except ValueError:
-           vmin_res = 0.015
-           vmax_res = 0.020
-        try:
-            vmin_res,vmax_res = vmin_res * 1e-3, vmax_res * 1e-3
+   # def fit_wrapper(self,df,vmin,vmax):
+    #    try:
+     #      vmin_res = float(self.vmin.text())
+      #     vmax_res = float(self.vmax.text())
+       # except ValueError:
+        #   vmin_res = 0.015
+         #  vmax_res = 0.020
+        #try:
+         #   vmin_res,vmax_res = vmin_res * 1e-3, vmax_res * 1e-3
             #print(vmin_res,vmax_res)
-            results = norm_state_resistance.norm_state_res(df,vmin,vmax)           
-            print("{0:<11} : {1:3.3f} +- {2:3.3e}".format("Resistance",results[0][0],results[2][1]))
-            print("{0:<11} : {1:3.3e} +- {2:3.3e}".format("y-intercept",results[1][0],results[1][1]))
-            print("{0:<11} : {1:3.3e} +- {2:3.3e}".format("IV Slope",results[2][0],results[2][1]))
-        except KeyError:
-            print('ERROR:need sweep data')
-
-        except ValueError:
-            print('ERROR:sweep at finer resolution')
+          #  results = norm_state_resistance.norm_state_res(df,vmin,vmax)           
+           # print("{0:<11} : {1:3.3f} +- {2:3.3e}".format("Resistance",results[0][0],results[2][1]))
+            #print("{0:<11} : {1:3.3e} +- {2:3.3e}".format("y-intercept",results[1][0],results[1][1]))
+#            print("{0:<11} : {1:3.3e} +- {2:3.3e}".format("IV Slope",results[2][0],results[2][1]))
+ #       except KeyError:
+  #          print('ERROR:need sweep data')
+#
+ #       except ValueError:
+  #          print('ERROR:sweep at finer resolution')
         
 class PlotCanvas(FigureCanvas):
     """Class for functions related to matplotlib plot"""
