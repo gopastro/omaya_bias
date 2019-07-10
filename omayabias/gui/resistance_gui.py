@@ -27,15 +27,14 @@ class IVCURVE_GUI(QMainWindow):
     def __init__(self):
         """Initializes some GUI parameters and calls 'initUI()'"""
         super(IVCURVE_GUI,self).__init__()
-        self.bias_widgets = {} #dic for Bias widgets
-        self.sisbias = SISBias() #class to control SISBias devices
-        self.lk = Lakeshore() #class to control Lakeshore Temp Monitor
-        self.sweep_data = {} #dic for storing sweep data
-        self.devsel_cb = {} 
-        self.devices = [None, None]
-        self.sweep_time = [None, None]
         self.skiprows = 2 #size of header for database file
         self.filename = ""
+        self.idname = ""
+        self.resistance = 0.0
+        self.vmin=""
+        self.vmax=""
+        self.data=""
+        self.df=[]
         self.initUI() #this function initializes the widgets and layouts
 
     def initUI(self):
@@ -70,18 +69,25 @@ class IVCURVE_GUI(QMainWindow):
         #Bias Groupbox
         res_groupbox = QGroupBox("Res")
         hlayout = QHBoxLayout()
-        res_groupbox.setLayout(self.add_res_grid(0))#Sets 'bias_groupbox' to a Hor. Layout
+        res_groupbox.setLayout(self.add_res_grid())#Sets 'bias_groupbox' to a Hor. Layout
         openB=QPushButton("Open File")
         openB.clicked.connect(self.openFileNameDialog)
         #Master --> Bias (vertically oriented)
         vlayout.addWidget(openB)
         vlayout.addWidget(res_groupbox)
 
-        self.fileLabel=QLabel("No file selected")
-        vlayout.addWidget(self.fileLabel)
+        label_groupbox = QGroupBox("")
+        label_groupbox.setLayout(self.add_label_grid())
+        vlayout.addWidget(label_groupbox)
+        #self.fileLabel=QLabel("No file selected")
+        #self.fileLabel.setFont(QFont("Arial", 20))
+        #vlayout.addWidget(self.fileLabel)
+        #self.idLabel=QLabel("")
+        #self.idLabel.setFont(QFont("Arial",20))
+        #vlayout.addWidget(self.idLabel)
         #Sets Master Groupbox to GUI's central GridLayout 'grid'
         self.grid = QGridLayout()
-        self.grid.addWidget(master_groupbox, 0, 0, 5, 1)      
+        self.grid.addWidget(master_groupbox,0, 0,0, 1)      
 
         #Canvas Groupbox
         canvas_groupbox = QGroupBox("IV Curve Plot")
@@ -100,9 +106,6 @@ class IVCURVE_GUI(QMainWindow):
         #Adds matplotlib toolbar to control 'canvas'
         self.addToolBar(QtCore.Qt.BottomToolBarArea,
                         NavigationToolbar2QT(self.canvas, self))
-        #vlayout2.addWidget(self.addToolBar(QtCore.Qt.BottomToolBarArea,
-        #                                   NavigationToolbar2QT(self.canvas, self)))
-        #vlayout2.addWidget(self.addToolBar(NavigationToolbar2QT(self.canvas, self)))
         canvas_groupbox.setLayout(vlayout2)
 
         #Sets Canvas Groupbox to GUI's central GridLayout 'grid'
@@ -116,18 +119,50 @@ class IVCURVE_GUI(QMainWindow):
         #Draw it all!
         self.show()
 
+    def add_label_grid(self):
+        grid = QGridLayout()
+        idlabel=QLabel("SIS ID:")
+        filelabel=QLabel("File Name:")
+        resistancelabel=QLabel("Resistance:")
+        slopelabel=QLabel("Slope:")
+        intlabel=QLabel("Intercept:")
+        self.idLabel=QLabel("SIS ID")
+        self.fileLabel=QLabel("File Name")
+        self.resistanceLabel=QLabel("Resistance")
+        self.slopeLabel=QLabel("Slope")
+        self.intLabel=QLabel("Intercept")
+
+        #add them widgets
+        grid.addWidget(filelabel,0,0)
+        grid.addWidget(idlabel,1,0)
+        grid.addWidget(resistancelabel,2,0)
+        grid.addWidget(slopelabel,3,0)
+        grid.addWidget(intlabel,4,0)
+        grid.addWidget(self.idLabel,1,1)
+        grid.addWidget(self.fileLabel,0,1)
+        grid.addWidget(self.resistanceLabel,2,1)
+        grid.addWidget(self.slopeLabel,3,1)
+        grid.addWidget(self.intLabel,4,1)
+        return grid
 
     def openFileNameDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","All Files (*);;Python Files (*.py)", options=options)
         if fileName:
-            print(fileName)
-            data=pd.read_csv(fileName,skiprows=3)
-            print(data)
-            self.plot_ivcurve(data)
-            self.fileLabel.setText(fileName)
-
+            fileName = str(fileName)
+            self.data=pd.read_csv(fileName,skiprows=3)
+            print(self.data.keys())
+            print(self.data.Vs)
+           #self.df = pd.DataFrame({'Vs':data['Vs'],'Is':data['Is']})
+            self.plot_ivcurve(self.data)
+            name = fileName.split("/")
+            setname=str(name[-1])
+            self.fileLabel.setText(setname)
+            file = open(fileName,"r")
+            sisid=file.readline()[13:-3]
+            file.close()
+            self.idLabel.setText(sisid)
 
             
     def add_menu(self, mainMenu):
@@ -138,9 +173,7 @@ class IVCURVE_GUI(QMainWindow):
         searchMenu = mainMenu.addMenu('Search')
         toolsMenu = mainMenu.addMenu('Tools')
         helpMenu = mainMenu.addMenu('Help')
-
         pcaMenu = QMenu('PCA', self)
-        
         exitButton = QAction(QIcon.fromTheme('exit'), 'Exit', self)
         exitButton.setShortcut('Ctrl+Q')
         exitButton.setStatusTip('Exit application')
@@ -160,45 +193,43 @@ class IVCURVE_GUI(QMainWindow):
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+
+    def dummy(self):
+        print("AHHHHH")
         
-    def add_res_grid(self,df):
+    def add_res_grid(self):
         grid = QGridLayout()
         vminL = QLabel('Vmin range (mV)')
         vmaxL = QLabel('Vmax range (mV)')
-        vmin=QLineEdit()
-        vmax=QLineEdit()
+        self.vmin=QLineEdit("15")
+        self.vmax=QLineEdit("20")
         resB=QPushButton("Get Resistance")
         resB.setToolTip('Calculates resistance of junction')
-       # resB.clicked.connect(self.fit_wrapper(df,0.015,0.020))
+        resB.clicked.connect(self.fit_wrapper)
         grid.addWidget(vminL,0,0)
         grid.addWidget(vmaxL,1,0)
-        grid.addWidget(vmin,0,1)
-        grid.addWidget(vmax,1,1)
+        grid.addWidget(self.vmin,0,1)
+        grid.addWidget(self.vmax,1,1)
         grid.addWidget(resB,2,0,1,2)
         return grid     
             
     def plot_ivcurve(self,df):
-        self.canvas.plot(df, clear=False)
+        self.canvas.plot(df,self.idname, clear=False)
 
-   # def fit_wrapper(self,df,vmin,vmax):
-    #    try:
-     #      vmin_res = float(self.vmin.text())
-      #     vmax_res = float(self.vmax.text())
-       # except ValueError:
-        #   vmin_res = 0.015
-         #  vmax_res = 0.020
-        #try:
-         #   vmin_res,vmax_res = vmin_res * 1e-3, vmax_res * 1e-3
-            #print(vmin_res,vmax_res)
-          #  results = norm_state_resistance.norm_state_res(df,vmin,vmax)           
-           # print("{0:<11} : {1:3.3f} +- {2:3.3e}".format("Resistance",results[0][0],results[2][1]))
-            #print("{0:<11} : {1:3.3e} +- {2:3.3e}".format("y-intercept",results[1][0],results[1][1]))
-#            print("{0:<11} : {1:3.3e} +- {2:3.3e}".format("IV Slope",results[2][0],results[2][1]))
- #       except KeyError:
-  #          print('ERROR:need sweep data')
-#
- #       except ValueError:
-  #          print('ERROR:sweep at finer resolution')
+    def fit_wrapper(self):
+        df = self.data
+        try:
+           vmin_res = float(self.vmin.text())
+           vmax_res = float(self.vmax.text())
+        except ValueError:
+           vmin_res = 0.015
+           vmax_res = 0.020
+        vmin_res,vmax_res = vmin_res * 1e-3, vmax_res * 1e-3
+        print(type(df))
+        results = norm_state_resistance.norm_state_res(df,vmin_res,vmax_res)
+        print(results)
+        
+    
         
 class PlotCanvas(FigureCanvas):
     """Class for functions related to matplotlib plot"""
@@ -214,12 +245,12 @@ class PlotCanvas(FigureCanvas):
                                    QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
 
-    def plot(self, df, channel=0, clear=True):
+    def plot(self, df, name, clear=True):
         """plot data onto axes"""
         if clear:
             self.clear()
-        self.axes.plot(df.Vj/1e-3, df.Is/1e-6, 'o-', label='Channel %d' % channel)
-        self.axes.set_title('SIS Channel %d' % channel)
+        self.axes.plot(df.Vj/1e-3, df.Is/1e-6, 'o-')
+        #self.axes.set_title(name)
         self.axes.legend(loc='best')
         self.draw()
         
