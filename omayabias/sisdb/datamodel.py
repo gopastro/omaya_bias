@@ -52,7 +52,14 @@ class IVCurveFile(BaseModel):
     filename = CharField()
     measured_time = DateTimeField()
     create_time = DateTimeField(default=datetime.datetime.now)    
-
+    resistance = FloatField(null=True)
+    resistance_error = FloatField(null=True)
+    slope = FloatField(null=True)
+    slope_error = FloatField(null=True)
+    intercept = FloatField(null=True)
+    intercept_error = FloatField(null=True)
+    
+    
 class Temperature(BaseModel):
     temp1 = FloatField(null=True)
     temp2 = FloatField(null=True)
