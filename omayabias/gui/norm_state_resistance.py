@@ -25,13 +25,17 @@ def norm_state_res(data_array, vmin, vmax):
     x = np.concatenate((x_neg, x_pos))
     y = np.concatenate((y_neg, y_pos))
     #fit_pos, err_pos=np.polyfit(x_pos, y_pos, 1, cov=True)
-
+    
     params, err = np.polyfit(x_pos, y_pos, 1, cov=True)
+
+
+
 
     #y_fit = fit_func(x, slope, intercept)
 
+
+    
     #return params,cov
 
     return [params, err,x,y]
-
     
