@@ -16,7 +16,7 @@ from omayabias.lakeshore.myGpib import Gpib
 import numpy
 import time
 import pandas as pd
-from omayabias.utils import norm_state_resistance
+import norm_state_resistance
 
 logger.name = __name__
 QIcon.setThemeSearchPaths(['/usr/share/icons'])
@@ -29,12 +29,14 @@ class IVCURVE_GUI(QMainWindow):
         super(IVCURVE_GUI,self).__init__()
         self.skiprows = 2 #size of header for database file
         self.filename = ""
-        self.idname = ""
+        self.sisid = ""
         self.resistance = 0.0
         self.vmin=""
         self.vmax=""
         self.data=""
         self.df=[]
+        self.results=[]
+        self.counter=0
         self.initUI() #this function initializes the widgets and layouts
 
     def initUI(self):
@@ -75,10 +77,16 @@ class IVCURVE_GUI(QMainWindow):
         #Master --> Bias (vertically oriented)
         vlayout.addWidget(openB)
         vlayout.addWidget(res_groupbox)
-
+        info_groupbox=QGroupBox("")
+        info_groupbox.setLayout(self.add_info_grid())
+        vlayout.addWidget(info_groupbox)
         label_groupbox = QGroupBox("")
         label_groupbox.setLayout(self.add_label_grid())
         vlayout.addWidget(label_groupbox)
+        self.errorLabel=QLabel("errormessage")
+        self.errorLabel.setFont(QFont("Arial",20))
+        vlayout.addWidget(self.errorLabel)
+        
         #self.fileLabel=QLabel("No file selected")
         #self.fileLabel.setFont(QFont("Arial", 20))
         #vlayout.addWidget(self.fileLabel)
@@ -119,30 +127,46 @@ class IVCURVE_GUI(QMainWindow):
         #Draw it all!
         self.show()
 
-    def add_label_grid(self):
+    def add_info_grid(self):
         grid = QGridLayout()
         idlabel=QLabel("SIS ID:")
         filelabel=QLabel("File Name:")
+        self.idLabel=QLabel("SIS ID")
+        self.fileLabel=QLabel("File Name")
+        #self.errorLabel=QLabel("")
+        #self.errorLabel.setPointSize(24)
+        grid.addWidget(filelabel,0,0)
+        grid.addWidget(idlabel,1,0)
+        grid.addWidget(self.idLabel,1,1,)
+        grid.addWidget(self.fileLabel,0,1)
+        #grid.addWidget(self.errorLabel,2,0)
+        return grid
+
+        
+    def add_label_grid(self):
+        grid = QGridLayout()
+
         resistancelabel=QLabel("Resistance:")
         slopelabel=QLabel("Slope:")
         intlabel=QLabel("Intercept:")
-        self.idLabel=QLabel("SIS ID")
-        self.fileLabel=QLabel("File Name")
         self.resistanceLabel=QLabel("Resistance")
         self.slopeLabel=QLabel("Slope")
         self.intLabel=QLabel("Intercept")
+        self.reserrLabel=QLabel("")
+        self.slopeerrLabel=QLabel("")
+        self.interrLabel=QLabel("")
 
         #add them widgets
-        grid.addWidget(filelabel,0,0)
-        grid.addWidget(idlabel,1,0)
+
         grid.addWidget(resistancelabel,2,0)
         grid.addWidget(slopelabel,3,0)
         grid.addWidget(intlabel,4,0)
-        grid.addWidget(self.idLabel,1,1)
-        grid.addWidget(self.fileLabel,0,1)
         grid.addWidget(self.resistanceLabel,2,1)
+        grid.addWidget(self.reserrLabel,2,2)
         grid.addWidget(self.slopeLabel,3,1)
+        grid.addWidget(self.slopeerrLabel,3,2)
         grid.addWidget(self.intLabel,4,1)
+        grid.addWidget(self.interrLabel,4,2)
         return grid
 
     def openFileNameDialog(self):
@@ -152,19 +176,19 @@ class IVCURVE_GUI(QMainWindow):
         if fileName:
             fileName = str(fileName)
             self.data=pd.read_csv(fileName,skiprows=3)
-            print(self.data.keys())
-            print(self.data.Vs)
+            #print(self.data.keys())
+            #print(self.data.Vs)
            #self.df = pd.DataFrame({'Vs':data['Vs'],'Is':data['Is']})
-            self.plot_ivcurve(self.data)
             name = fileName.split("/")
             setname=str(name[-1])
             self.fileLabel.setText(setname)
             file = open(fileName,"r")
-            sisid=file.readline()[13:-3]
+            self.sisid=file.readline()[13:-3]
             file.close()
-            self.idLabel.setText(sisid)
+            self.idLabel.setText(self.sisid)
+            self.errorLabel.setText("")
+            self.canvas.plot(self.data,self.sisid,"blue",clear=True)
 
-            
     def add_menu(self, mainMenu):
         """Adds a menu feature to the main window"""
         fileMenu = mainMenu.addMenu('File')
@@ -194,9 +218,7 @@ class IVCURVE_GUI(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
-    def dummy(self):
-        print("AHHHHH")
-        
+
     def add_res_grid(self):
         grid = QGridLayout()
         vminL = QLabel('Vmin range (mV)')
@@ -213,23 +235,49 @@ class IVCURVE_GUI(QMainWindow):
         grid.addWidget(resB,2,0,1,2)
         return grid     
             
-    def plot_ivcurve(self,df):
-        self.canvas.plot(df,self.idname, clear=False)
+   # def plot_ivcurve(self,df):
+    #    self.canvas.plot(df,self.idname, clear=False,"blue")
+    def fit_func(x, a, b):
+        return x*a + b
 
     def fit_wrapper(self):
-        df = self.data
-        try:
-           vmin_res = float(self.vmin.text())
-           vmax_res = float(self.vmax.text())
-        except ValueError:
-           vmin_res = 0.015
-           vmax_res = 0.020
-        vmin_res,vmax_res = vmin_res * 1e-3, vmax_res * 1e-3
-        print(type(df))
-        results = norm_state_resistance.norm_state_res(df,vmin_res,vmax_res)
-        print(results)
-        
-    
+            df = self.data
+        #try:
+            try:
+                vmin_res = float(self.vmin.text())
+                vmax_res = float(self.vmax.text())
+            except ValueError:
+                vmin_res = 0.015
+                vmax_res = 0.020
+            vmin_res,vmax_res = vmin_res * 1e-3, vmax_res * 1e-3
+            #print(type(df))
+            self.results = norm_state_resistance.norm_state_res(df,vmin_res,vmax_res)
+            slope=self.results[0][0]
+            intercept = self.results[0][1]
+            slopeerr=numpy.sqrt(self.results[1][0][0])
+            intercepterr =numpy.sqrt( self.results[1][1][1])
+            resistance = 1/slope
+            resistanceerr = slopeerr
+
+            x = self.results[2]
+            y = self.results[3]
+            
+            #print(x,y)
+            self.resistanceLabel.setText(str(resistance.round(3)))
+            self.reserrLabel.setText(str(resistanceerr))
+            self.slopeLabel.setText(str(slope.round(3)))
+            self.slopeerrLabel.setText(str(slopeerr.round(8)))
+            self.intLabel.setText(str(intercept.round(3)))
+            self.interrLabel.setText(str(intercepterr.round(8)))
+
+            
+            data = {"Vs":x,"Is":y}
+            fitdf = pd.DataFrame(data)
+            self.canvas.plot(df,self.sisid,"blue", clear=True)
+            self.canvas.plot(fitdf,"Fit","red",clear=False)
+        #except AttributeError:
+            #self.errorLabel.setText("No file open")
+
         
 class PlotCanvas(FigureCanvas):
     """Class for functions related to matplotlib plot"""
@@ -245,11 +293,11 @@ class PlotCanvas(FigureCanvas):
                                    QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
 
-    def plot(self, df, name, clear=True):
+    def plot(self, df, name,col, clear=True):
         """plot data onto axes"""
         if clear:
             self.clear()
-        self.axes.plot(df.Vj/1e-3, df.Is/1e-6, 'o-')
+        self.axes.plot(df.Vs/1e-3, df.Is/1e-6, color=col,label=name)
         #self.axes.set_title(name)
         self.axes.legend(loc='best')
         self.draw()
