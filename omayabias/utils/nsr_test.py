@@ -24,8 +24,9 @@ y_pos = np.array(subset_pos['Is'])
 x_neg = np.array(subset_neg['Vs'])
 y_neg = np.array(subset_neg['Is'])
 
-
-params, cov = np.polyfit(x_pos, y_pos, 1, cov=True)
+x = np.concatenate((x_neg, x_pos))
+y = np.concatenate((y_neg, y_pos))
+params, cov = np.polyfit(x, y, 1, cov=True)
 
 def fit_func(x, a, b):
     return x*a + b
@@ -33,8 +34,8 @@ def fit_func(x, a, b):
 slope = params[0]
 intercept = params[1]
 
-y_fit = fit_func(x_pos, slope, intercept)
+y_fit = fit_func(x, slope, intercept)
 
-plt.plot(x_pos, y_pos, 'o')
-plt.plot(x_pos, y_fit, '-')
+plt.plot(x, y, 'o')
+plt.plot(x, y_fit, '-')
 plt.show()
