@@ -525,7 +525,7 @@ class PlotCanvas(FigureCanvas):
         """plot data onto axes"""
         if clear:
             self.clear()
-        self.axes.plot(df.Vj/1e-3, df.Is/1e-6, 'o-', label='Channel %d' % channel)
+        self.axes.plot(df.Vs/1e-3, df.Is/1e-6, 'o-', label='Channel %d' % channel)
         self.axes.set_title('SIS Channel %d' % channel)
         self.axes.legend(loc='best')
         self.draw()
