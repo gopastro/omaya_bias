@@ -1,5 +1,16 @@
 import numpy as np
 def norm_state_res(data_array, vmin, vmax):
+'''
+   Performs line fit to calculate normal state resistance of SIS junctions.
+   
+   input:
+      data_array: array containing sensed voltage and current measurements
+   returns:
+      3x2 matrix:
+          resistance, resistance error
+          average slope, average slope error
+          average y-intercept, average y-intercept error
+    ''' 
     pre_pos = data_array[data_array.Vs <= vmax]
     pre_neg = data_array[data_array.Vs >= -vmax]
     subset_pos = pre_pos[vmin <= pre_pos.Vs]
