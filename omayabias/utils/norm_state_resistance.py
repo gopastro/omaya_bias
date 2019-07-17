@@ -20,7 +20,12 @@ def norm_state_res(data_array, vmin, vmax):
     #y_fit = fit_func(x, slope, intercept)
 
     #return params,cov
-
-    return [params, err,x,y]
+    slope = params[0]
+    intercept=params[1]
+    resistance=1/slope
+    slope_err = np.sqrt(err[0][0])
+    intercept_err=np.sqrt(err[1][1])
+    resistance_err=slope_err
+    return [[resistance,resistance_err],[slope,slope_err],[intercept,intercept_err]]
 
     
