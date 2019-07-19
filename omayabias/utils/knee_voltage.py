@@ -32,7 +32,8 @@ def knee_voltage(df):
     #finding the index of the knee
     loc_pos = np.where(y1_pos==np.amax(y1_pos))
     loc_neg = np.where(y1_neg == np.amax(y1_neg))
-
+    
+    #finding and returning the knee voltage in Volts
     pos_knee =x_pos[loc_pos]
     neg_knee = x_neg[loc_neg]
     return pos_knee, neg_knee
