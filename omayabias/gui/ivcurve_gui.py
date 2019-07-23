@@ -435,6 +435,10 @@ class IVCURVE_GUI(QMainWindow):
             lisdic.append(dic)
         self.sweep_data[channel] = pd.DataFrame(lisdic) #saves df into sweep_data
         self.sweep_time[channel] = datetime.datetime.now().ctime()
+
+        #After sweep data is saved, set Vj for 'channel' back to 0
+        self.xicor[channel].set_mixer_voltage(0)
+
         self.bias_timer.start(3000)
 
     def add_res_grid(self,channel):
