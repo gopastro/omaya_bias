@@ -3,9 +3,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 def knee_voltage(df):
     #dividing into regions where the knee should be
-    pos = df[df.Vs >=0.010]
-    neg = df[df.Vs <=-0.005]
-
+    pre_pos = df[df.Vs >=0.010]
+    pos = pre_pos[pre_pos <=0.015]
+    pre_neg = df[df.Vs <=-0.005]
+    neg = pre_neg[pre_neg >=0.015]
     #creating positive and negative arrays based on the region
     x_pos = np.array(pos['Vs'])
     y_pos = np.array(pos['Is'])
