@@ -2,6 +2,14 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 def knee_voltage(df):
+    """
+    Calculates the knee voltage of SIS junctions using a first derivative
+    
+    input:
+        df : array containing sensed voltage and current measurements
+    returns:
+        pos_knee, neg_knee : voltage values of the positive and negative knee voltages
+    """
     #dividing into regions where the knee should be
     pre_pos = df[df.Vs >=0.010]
     pos = pre_pos[pre_pos <=0.015]
