@@ -17,6 +17,7 @@ import numpy
 import time
 import pandas as pd
 import norm_state_resistance
+import knee_voltage
 
 logger.name = __name__
 QIcon.setThemeSearchPaths(['/usr/share/icons'])
@@ -36,6 +37,7 @@ class IVCURVE_GUI(QMainWindow):
         self.data=""
         self.df=[]
         self.results=[]
+        self.knees=[]
         self.counter=0
         self.initUI() #this function initializes the widgets and layouts
 
@@ -83,10 +85,13 @@ class IVCURVE_GUI(QMainWindow):
         label_groupbox = QGroupBox("")
         label_groupbox.setLayout(self.add_label_grid())
         vlayout.addWidget(label_groupbox)
-        self.errorLabel=QLabel("errormessage")
+        kneeB=QPushButton("Get Knee Voltages")
+        kneeB.clicked.connect(self.knee_wrapper)
+        vlayout.addWidget(kneeB)
+        self.errorLabel=QLabel("")
         self.errorLabel.setFont(QFont("Arial",20))
         vlayout.addWidget(self.errorLabel)
-        
+
         #self.fileLabel=QLabel("No file selected")
         #self.fileLabel.setFont(QFont("Arial", 20))
         #vlayout.addWidget(self.fileLabel)
@@ -145,28 +150,36 @@ class IVCURVE_GUI(QMainWindow):
         
     def add_label_grid(self):
         grid = QGridLayout()
-
         resistancelabel=QLabel("Resistance:")
         slopelabel=QLabel("Slope:")
         intlabel=QLabel("Intercept:")
+        poskneelabel=QLabel("Positive Knee(V):")
+        negkneelabel=QLabel("Negative Knee (V):")
         self.resistanceLabel=QLabel("Resistance")
         self.slopeLabel=QLabel("Slope")
         self.intLabel=QLabel("Intercept")
         self.reserrLabel=QLabel("")
         self.slopeerrLabel=QLabel("")
         self.interrLabel=QLabel("")
+        self.poskneeLabel=QLabel("")
+        self.negkneeLabel=QLabel("")
 
         #add them widgets
 
         grid.addWidget(resistancelabel,2,0)
         grid.addWidget(slopelabel,3,0)
         grid.addWidget(intlabel,4,0)
+        grid.addWidget(poskneelabel,5,0)
+        grid.addWidget(negkneelabel,6,0)
         grid.addWidget(self.resistanceLabel,2,1)
         grid.addWidget(self.reserrLabel,2,2)
         grid.addWidget(self.slopeLabel,3,1)
         grid.addWidget(self.slopeerrLabel,3,2)
         grid.addWidget(self.intLabel,4,1)
         grid.addWidget(self.interrLabel,4,2)
+        grid.addWidget(self.poskneeLabel,5,1)
+        grid.addWidget(self.negkneeLabel,6,1)
+        
         return grid
 
     def openFileNameDialog(self):
@@ -187,7 +200,7 @@ class IVCURVE_GUI(QMainWindow):
             file.close()
             self.idLabel.setText(self.sisid)
             self.errorLabel.setText("")
-            self.canvas.plot(self.data,self.sisid,"blue",clear=True)
+            self.canvas.plot(self.data,self.sisid,"blue",'o',clear=True)
 
     def add_menu(self, mainMenu):
         """Adds a menu feature to the main window"""
@@ -273,12 +286,20 @@ class IVCURVE_GUI(QMainWindow):
             
             data = {"Vs":x,"Is":y}
             fitdf = pd.DataFrame(data)
-            self.canvas.plot(df,self.sisid,"blue", clear=True)
-            self.canvas.plot(fitdf,"Fit","red",clear=False)
+            self.canvas.plot(df,self.sisid,"blue",'o' ,clear=True)
+            self.canvas.plot(fitdf,"Fit","red",'None',clear=False)
         #except AttributeError:
             #self.errorLabel.setText("No file open")
+    def knee_wrapper(self):
+           self.knees = knee_voltage.knee_voltage(self.data)
+           pos_knee = self.knees[0][0]
+           neg_knee = self.knees[1][0]
+           #print(type(pos_knee), neg_knee)
+           self.poskneeLabel.setText(str(pos_knee))
+           self.negkneeLabel.setText(str(neg_knee))
+           self.canvas.vertline(pos_knee ,"Pos Knee", "purple",clear=False)
+           self.canvas.vertline(neg_knee,"Neg Knee", "gold",clear=False)
 
-        
 class PlotCanvas(FigureCanvas):
     """Class for functions related to matplotlib plot"""
 
@@ -293,12 +314,19 @@ class PlotCanvas(FigureCanvas):
                                    QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
 
-    def plot(self, df, name,col, clear=True):
+    def plot(self, df, name,col,mark, clear=True):
         """plot data onto axes"""
         if clear:
             self.clear()
-        self.axes.plot(df.Vs/1e-3, df.Is/1e-6, color=col,label=name)
+        self.axes.plot(df.Vs/1e-3, df.Is/1e-6,color=col,marker=mark,label=name)
         #self.axes.set_title(name)
+        self.axes.legend(loc='best')
+        self.draw()
+
+    def vertline(self, xcoord, name, col, clear=True):
+        if clear:
+            self.clear()
+        self.axes.axvline(x=xcoord*1e3, color=col, label=name)
         self.axes.legend(loc='best')
         self.draw()
         
