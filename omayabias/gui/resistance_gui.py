@@ -59,7 +59,7 @@ class IVCURVE_GUI(QMainWindow):
         self.add_toolbar(self.toolbar)
 
         #Set title for GUI window
-        self.setWindowTitle('OMAYA RESISTANCE GUI')
+        self.setWindowTitle('OMAYA LOOKBACK GUI')
 
         #Initializes main widget 'wid' that Master and Canvas Groupboxes will lock to
         wid = QWidget(self)
@@ -264,16 +264,17 @@ class IVCURVE_GUI(QMainWindow):
                 vmax_res = 0.020
             vmin_res,vmax_res = vmin_res * 1e-3, vmax_res * 1e-3
             #print(type(df))
-            self.results = norm_state_resistance.norm_state_res(df,vmin_res,vmax_res)
-            slope=self.results[0][0]
-            intercept = self.results[0][1]
-            slopeerr=numpy.sqrt(self.results[1][0][0])
-            intercepterr =numpy.sqrt( self.results[1][1][1])
+            self.results = norm_state_resistance.norm_state_res(df,vmin_res,vmax_res,debug=True)
+            slope=self.results[1][0]
+            intercept = self.results[2][0]
+            #print(self.results)
+            slopeerr=numpy.sqrt(self.results[1][1])
+            intercepterr =numpy.sqrt( self.results[2][1])
             resistance = 1/slope
             resistanceerr = slopeerr
 
-            x = self.results[2]
-            y = self.results[3]
+            x = self.results[3][0]
+            y = self.results[3][1]
             
             #print(x,y)
             self.resistanceLabel.setText(str(resistance.round(3)))
@@ -286,12 +287,13 @@ class IVCURVE_GUI(QMainWindow):
             
             data = {"Vs":x,"Is":y}
             fitdf = pd.DataFrame(data)
-            self.canvas.plot(df,self.sisid,"blue",'o' ,clear=True)
+            #self.canvas.plot(df,self.sisid,"blue",'o' ,clear=True)
             self.canvas.plot(fitdf,"Fit","red",'None',clear=False)
         #except AttributeError:
             #self.errorLabel.setText("No file open")
     def knee_wrapper(self):
-           self.knees = knee_voltage.knee_voltage(self.data)
+           self.knees = knee_voltage.knee_voltage(self.data,debug=True)
+           #print(self.knees)
            pos_knee = self.knees[0][0]
            neg_knee = self.knees[1][0]
            #print(type(pos_knee), neg_knee)
