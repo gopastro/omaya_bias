@@ -438,7 +438,7 @@ class IVCURVE_GUI(QMainWindow):
         self.sweep_time[channel] = datetime.datetime.now().ctime()
 
         #After sweep data is saved, set Vj for 'channel' back to 0                                                                                                  
-        self.xicor[channel].set_mixer_voltage(0)
+        self.sisbias.xicor[channel].set_mixer_voltage(0)
 
         self.bias_timer.start(3000)
 
