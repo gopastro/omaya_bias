@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-def knee_voltage(df):
+def knee_voltage(df,**kwargs):
     """
     Calculates the knee voltage of SIS junctions using a first derivative
     
@@ -11,10 +11,11 @@ def knee_voltage(df):
         pos_knee, neg_knee : voltage values of the positive and negative knee voltages
     """
     #dividing into regions where the knee should be
-    pre_pos = df[df.Vs >=0.010]
-    pos = pre_pos[pre_pos <=0.015]
-    pre_neg = df[df.Vs <=-0.005]
-    neg = pre_neg[pre_neg >=0.015]
+    print(df)
+    pre_pos = df[df.Vs >= 0.010]
+    pos = pre_pos[pre_pos.Vs <= 0.015]
+    pre_neg = df[df.Vs <= -0.005]
+    neg = pre_neg[pre_neg.Vs >= -0.015]
     #creating positive and negative arrays based on the region
     x_pos = np.array(pos['Vs'])
     y_pos = np.array(pos['Is'])
@@ -29,6 +30,7 @@ def knee_voltage(df):
     dy_pos=np.diff(y_pos,1)
     y1_pos=dy_pos/dx_pos
 
+ 
     #doing the same thing for the negative subset
     x_neg = np.array(neg['Vs'])
     y_neg = np.array(neg['Is'])
@@ -45,4 +47,10 @@ def knee_voltage(df):
     #finding and returning the knee voltage in Volts
     pos_knee =x_pos[loc_pos]
     neg_knee = x_neg[loc_neg]
+    if 'debug' in kwargs:
+        print(pre_pos,pos,pre_neg,neg)
+        #print(dx_pos,dy_pos)
+        #print(dx_neg,dy_neg)
+        #print(y1_pos,y1_neg)
+        #print(loc_pos,loc_neg)
     return pos_knee, neg_knee
